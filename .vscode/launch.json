@@ -5,11 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Module",
+            "name": "Run: FastAPI Demo App",
             "type": "python",
             "request": "launch",
-            "module": "enter-your-module-name",
-            "justMyCode": true
+            "module": "gunicorn",
+            "args": [
+                "main:app",
+                "-k=uvicorn.workers.UvicornWorker",
+                // "--log-config=${workspaceFolder}/app/backend/logging.conf",
+                "-c=${workspaceFolder}/test/gunicorn_conf.py"
+              ],
+              "cwd": "${workspaceFolder}/test",
+              "console": "internalConsole",
+              "envFile": "${workspaceFolder}/test/.env",
+              "justMyCode": false,
         }
     ]
 }

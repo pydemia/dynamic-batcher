@@ -38,7 +38,7 @@ r.ping()
 
 key = 'INPUT'
 
-for i in range(0,10):
+for i in range(0,100):
     r.xadd(key, { 'ts': time(), 'v': i } )
 
 print(f"stream length: {r.xlen(key)}")
@@ -54,3 +54,4 @@ TIMEOUT = 2*seconds
 l = r.xread( count=BATCH_SIZE, block=TIMEOUT, streams={key: '$'} )
 print( f"after 2s TIMEOUT, got an empty list {l}, no *new* messages on the stream")
 print( f"stream length: {r.xlen(key)}")
+
