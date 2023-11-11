@@ -1,0 +1,32 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "locust-launch",
+			"type": "shell",
+			"command": "${command:python.interpreterPath}",
+            "args": [
+                "-m",
+                "dotenv",
+                "-f",
+                ".env",
+                "run",
+                "${command:python.interpreterPath}",
+				"-m",
+				"locust"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/test/locust"
+            },
+            "group": "test",
+            "presentation": {
+                "group": "test",
+                "clear": true,
+                "close": false,
+                "reveal": "silent",
+                "panel": "shared",
+                "revealProblems": "onProblem"
+            }
+		}
+	]
+}

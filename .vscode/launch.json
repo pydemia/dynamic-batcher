@@ -5,19 +5,35 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run: FastAPI Demo App",
+            "name": "Run: Demo App - gunicorn",
             "type": "python",
             "request": "launch",
             "module": "gunicorn",
             "args": [
                 "main:app",
                 "-k=uvicorn.workers.UvicornWorker",
-                // "--log-config=${workspaceFolder}/app/backend/logging.conf",
-                "-c=${workspaceFolder}/test/gunicorn_conf.py"
+                // "--log-config=${workspaceFolder}/test/applogging.conf",
+                "-c=${workspaceFolder}/test/app/gunicorn_conf.py"
               ],
-              "cwd": "${workspaceFolder}/test",
+              "cwd": "${workspaceFolder}/test/app",
               "console": "internalConsole",
-              "envFile": "${workspaceFolder}/test/.env",
+              "envFile": "${workspaceFolder}/test/app.env",
+              "justMyCode": false,
+        },
+        {
+            "name": "Run: Demo App - uvicorn",
+            "type": "python",
+            "request": "launch",
+            "module": "gunicorn",
+            "args": [
+                "main:app",
+                "-k=uvicorn.workers.UvicornWorker",
+                // "--log-config=${workspaceFolder}/test/applogging.conf",
+                // "-c=${workspaceFolder}/test/app/gunicorn_conf.py"
+              ],
+              "cwd": "${workspaceFolder}/test/app",
+              "console": "internalConsole",
+              "envFile": "${workspaceFolder}/test/app.env",
               "justMyCode": false,
         }
     ]
