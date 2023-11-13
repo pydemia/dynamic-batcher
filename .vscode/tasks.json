@@ -1,6 +1,48 @@
 {
 	"version": "2.0.0",
 	"tasks": [
+        {
+            "label": "redis-launch",
+            "type": "docker-run",
+            "dockerRun": {
+                "containerName": "redis",
+                "image": "bitnami/redis:latest",
+                "env": {
+                    "REDIS_PASSWORD": "redis!"
+                },
+                "ports": [
+                    {
+                        "containerPort": 6379,
+                        "hostPort": 6379
+                    }
+                ],
+                "remove": true
+            }
+        },
+        {
+            "label": "redis-shutdown",
+            "type": "shell",
+            "command": "docker container stop redis || true",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true,
+                "revealProblems": "onProblem",
+                "close": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "redis-restart",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "redis-shutdown",
+                "redis-launch",
+            ]
+        },
 		{
 			"label": "locust-launch",
 			"type": "shell",
@@ -16,7 +58,7 @@
 				"locust"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/test/locust"
+                "cwd": "${workspaceFolder}/e2e/locust"
             },
             "group": "test",
             "presentation": {

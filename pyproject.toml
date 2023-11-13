@@ -21,6 +21,11 @@ dependencies = [
     'pytest'
 ]
 
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]
+
 [project.urls]
 "Homepage" = "https://github.com/pypa/sampleproject"
 "Bug Tracker" = "https://github.com/pypa/sampleproject/issues"

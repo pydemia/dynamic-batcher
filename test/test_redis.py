@@ -1,57 +1,77 @@
-import redis
-
-# r = redis.Redis(host='localhost', port=6379, db=0)
-r = redis.Redis(host='localhost', port=6379, db=0, protocol=3)
-r.set('foo', 'bar')
-
-r.get('foo')
+import pytest
+from dynamic_batcher import redis_engine
+import json
 
 
-# # Redis Pipeline
-# pipe = r.pipeline()
-# pipe.set('foo', 5)
-# pipe.set('bar', 18.5)
-# pipe.set('blee', "hello world!")
-# pipe.execute()
-# [True, True, True]
+def test_get_client():
+    client = redis_engine.get_client(
+        host=redis_engine.REDIS__HOST,
+        port=redis_engine.REDIS__PORT,
+        db=redis_engine.REDIS__DB,
+        password=redis_engine.REDIS__PASSWORD,
+    )
+    assert client.ping()
 
-# # Redis Pub/Sub
-# r = redis.Redis(...)
-# p = r.pubsub()
-# p.subscribe('my-first-channel', 'my-second-channel', ...)
-# p.get_message()
-# {'pattern': None, 'type': 'subscribe', 'channel': b'my-second-channel', 'data': 1}
+def test_get_default_client():
+    client = redis_engine.get_default_client()
+    assert client.ping()
 
-# # Redis Stream
-# redis_host = "redis"
-# stream_key = "skey"
-# stream2_key = "s2key"
-# group1 = "grp1"
-# group2 = "grp2"
-
-import redis
-from time import time
-from redis.exceptions import ConnectionError, DataError, NoScriptError, RedisError, ResponseError
-
-r = redis.Redis(host='localhost', port=6379, db=0, protocol=3, password='corus!')
-r.ping()
-
-key = 'INPUT'
-
-for i in range(0,100):
-    r.xadd(key, { 'ts': time(), 'v': i } )
-
-print(f"stream length: {r.xlen(key)}")
+# def test_ping_redis():
+#     # assert redis.ping()
+#     return True
 
 
-l = r.xread( count=2, streams={key: 0} )
-print(l)
+# @pytest.fixture
+# def shutdown_redis():
+#     assert redis.launch()
+#     assert redis.shutdown()
+#     return True
 
-# wait for 5s for new messages
-BATCH_SIZE = 100
-seconds = 1000
-TIMEOUT = 2*seconds
-l = r.xread( count=BATCH_SIZE, block=TIMEOUT, streams={key: '$'} )
-print( f"after 2s TIMEOUT, got an empty list {l}, no *new* messages on the stream")
-print( f"stream length: {r.xlen(key)}")
 
+# @pytest.fixture
+# def restart_redis():
+#     assert redis.launch()
+#     assert redis.restart()
+#     return True
+
+
+# @pytest.fixture
+def test_info_redis():
+    return redis_engine.info()
+
+
+####################################################
+
+def test_redis_add_read():
+    client = redis_engine.get_default_client()
+    body = {
+        "name": "test",
+        "data": {
+            "content": "xxx",
+        },
+    }
+    
+    body_json = json.dumps(body)
+    r = client.xadd(redis_engine.REDIS__STREAM_KEY, {"body": body_json})
+
+    l = client.xread(count=1, streams={redis_engine.REDIS__STREAM_KEY: 10})
+    client.xread(streams={redis_engine.REDIS__STREAM_KEY: r})
+    client.xrange(redis_engine.REDIS__STREAM_KEY, min=r, max=r)
+    client.xreadgroup(
+        groupname=redis_engine.REDIS__STREAM_GROUP,
+        consumername="consumer",
+        streams={redis_engine.REDIS__STREAM_KEY: ">"},
+        count=2,
+        block=2,
+        noack=False,
+    )
+    # client.xpending(redis.REDIS__STREAM_KEY, groupname=redis.REDIS__STREAM_GROUP)
+    client.xpending_range(redis_engine.REDIS__STREAM_KEY, groupname=redis_engine.REDIS__STREAM_GROUP, count=1, min=r, max=r)
+    client.xack(redis_engine.REDIS__STREAM_KEY, redis_engine.REDIS__STREAM_GROUP, r)
+    client.xadd('finished', {"body": json.dumps({"content": "done"})}, id=r)
+    client.xpending_range(redis_engine.REDIS__STREAM_KEY, groupname=redis_engine.REDIS__STREAM_GROUP, count=1, min=r, max=r)
+
+    client.s
+    # client.xreadgroup(
+    #     redis.REDIS__STREAM_GROUP,
+    # )

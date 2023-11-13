@@ -3,6 +3,16 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
+    "compounds": [
+        {
+            "name": "Run App & BatchProcessor",
+            "configurations": [
+                "Run: BatchProcessor",
+                "Run: Demo App - gunicorn",
+            ],
+            "preLaunchTask": "redis-restart",
+        }
+    ],
     "configurations": [
         {
             "name": "Run: Demo App - gunicorn",
@@ -12,29 +22,55 @@
             "args": [
                 "main:app",
                 "-k=uvicorn.workers.UvicornWorker",
-                // "--log-config=${workspaceFolder}/test/applogging.conf",
-                "-c=${workspaceFolder}/test/app/gunicorn_conf.py"
+                // "-k=aiohttp.worker.GunicornWebWorker",
+                // "-k=eventlet",
+                // "-k=gevent",
+                // "-k=gthread",
+                // "-k=gunicorn.workers.gthread.ThreadWorker",
+                "--log-config=${workspaceFolder}/e2e/app/logging.conf",
+                "-c=${workspaceFolder}/e2e/app/gunicorn_conf.py"
               ],
-              "cwd": "${workspaceFolder}/test/app",
+              "env": {
+                "PYTHONPATH": "${workspaceFolder}:${env:PYTHONPATH}"
+              },
+              "cwd": "${workspaceFolder}/e2e/app",
               "console": "internalConsole",
-              "envFile": "${workspaceFolder}/test/app.env",
-              "justMyCode": false,
+              "envFile": "${workspaceFolder}/e2e/app/.env",
+              "justMyCode": true,
         },
         {
             "name": "Run: Demo App - uvicorn",
             "type": "python",
             "request": "launch",
-            "module": "gunicorn",
+            "module": "uvicorn",
             "args": [
                 "main:app",
-                "-k=uvicorn.workers.UvicornWorker",
-                // "--log-config=${workspaceFolder}/test/applogging.conf",
+                // "-k=uvicorn.workers.UvicornWorker",
+                "--log-config=${workspaceFolder}/e2e/app/logging.conf",
                 // "-c=${workspaceFolder}/test/app/gunicorn_conf.py"
               ],
-              "cwd": "${workspaceFolder}/test/app",
+              "env": {
+                "PYTHONPATH": "${workspaceFolder}:${env:PYTHONPATH}"
+              },
+              "cwd": "${workspaceFolder}/e2e/app",
               "console": "internalConsole",
-              "envFile": "${workspaceFolder}/test/app.env",
-              "justMyCode": false,
+              "envFile": "${workspaceFolder}/e2e/app/.env",
+              "justMyCode": true,
+        },
+        {
+            "name": "Run: BatchProcessor",
+            "type": "python",
+            "request": "launch",
+            "module": "dynamic_batcher",
+            "args": [
+              ],
+              "env": {
+                "PYTHONPATH": "${workspaceFolder}:${env:PYTHONPATH}"
+              },
+            //   "cwd": "${workspaceFolder}/e2e/app",
+              "console": "internalConsole",
+            //   "envFile": "${workspaceFolder}/e2e/app/.env",
+              "justMyCode": true,
         }
     ]
 }
