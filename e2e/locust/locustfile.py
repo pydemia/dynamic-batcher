@@ -1,6 +1,5 @@
 import time
 import random
-import gevent
 from locust import HttpUser, task, between, FastHttpUser
 
 class QuickstartUser(FastHttpUser):

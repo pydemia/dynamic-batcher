@@ -13,7 +13,6 @@ from redis.exceptions import (
 )
 
 from .redis_engine import (
-    USE_LOCAL_REDIS,
     REDIS__HOST,
     REDIS__PORT,
     REDIS__DB,

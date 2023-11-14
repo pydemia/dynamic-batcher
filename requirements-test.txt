@@ -1,5 +1,5 @@
 # gunicorn
-gunicorn[gthread,eventlet,gevent]
+gunicorn
 uvicorn
 locust
 python-dotenv

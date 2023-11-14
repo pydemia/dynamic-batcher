@@ -5,10 +5,11 @@ import uuid
 import asyncio
 import logging
 import logging.config
+from pathlib import Path
 
 
 logging.config.fileConfig(
-    'logging.conf',
+    Path(__file__).parent.absolute().joinpath('logging.conf'),
 )
 
 from dynamic_batcher import DynamicBatcher, BatchProcessor
@@ -26,7 +27,7 @@ def set_name(bodies: List[Dict]) -> List[Dict]:
 
 if __name__ == '__main__':
     log = logging.getLogger()
-    log.info('test')
+    log.info('start test daemon')
     batcher = DynamicBatcher()
     batch_processor = BatchProcessor(
         batch_size=DYNAMIC_BATCHER__BATCH_SIZE,
