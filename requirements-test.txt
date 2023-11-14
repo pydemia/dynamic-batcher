@@ -8,3 +8,5 @@ wheel
 build
 twine
 esbonio
+keyring
+keyrings.alt
