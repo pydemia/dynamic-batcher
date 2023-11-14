@@ -1,16 +1,8 @@
-from typing import Optional, List, Dict, Callable, Any, NamedTuple
+from typing import Optional, List, Dict, Callable, NamedTuple
 import os
 import json
-import redis
 import asyncio
 from autologging import logged
-from redis.exceptions import (
-    ConnectionError,
-    DataError,
-    NoScriptError,
-    RedisError,
-    ResponseError,
-)
 
 from .redis_engine import (
     REDIS__HOST,
@@ -21,10 +13,9 @@ from .redis_engine import (
     REDIS__STREAM_GROUP_PROCESSOR,
     REDIS__STREAM_KEY_RESPONSE,
     REDIS__STREAM_GROUP_BATCHER,
-    # launch,
-    info,
     get_client,
 )
+from .types import ResponseStream, PendingRequestStream
 
 
 __all__ = [
@@ -35,18 +26,6 @@ __all__ = [
 
 DYNAMIC_BATCHER__BATCH_SIZE = int(os.getenv("DYNAMIC_BATCHER__BATCH_SIZE", "64"))
 DYNAMIC_BATCHER__BATCH_TIME = int(os.getenv("DYNAMIC_BATCHER__BATCH_TIME", "2"))
-
-
-class StreamBody(NamedTuple):
-    stream_id: bytes
-    body: List | Dict
-
-
-class Message(NamedTuple):
-    message_id: bytes
-    consumer: bytes
-    time_since_delivered: int
-    times_delivered: int
 
 
 @logged
@@ -76,25 +55,14 @@ class DynamicBatcher:
         self.delay = delay
         self.timeout = timeout
 
-    async def asend(self, body: Dict, *args, **kwargs) -> Optional[StreamBody]:
-        requested_stream_id: bytes = self._redis_client.xadd(self.request_key, body)
+    async def asend(self, body: Dict, *args, **kwargs) -> Optional[ResponseStream]:
+        requested_stream_id: bytes = self._redis_client.xadd(self.request_key, {"body": json.dumps(body)})
         r = await self._wait_for_start(requested_stream_id, delay=self.delay, timeout=self.timeout)
         r = await self._wait_for_finish(requested_stream_id, delay=self.delay, timeout=self.timeout)
         return r.body
 
-    
-    def get_stream_by_id(self, stream_id: bytes) -> Optional[StreamBody]:
-        messages: List = self._redis_client.xrange(
-            self.request_key,
-            min=stream_id,
-            max=stream_id,
-        )
-        if messages:
-            return StreamBody(stream_id, messages)
-        else:
-            return
 
-    async def _wait_for_start(self, stream_id: bytes, delay: int = 0.1, timeout=10) -> Optional[StreamBody]:
+    async def _wait_for_start(self, stream_id: bytes, delay: int = 0.1, timeout=10) -> Optional[ResponseStream]:
         is_accepted = False
         total_delay = 0
         while is_accepted or (total_delay < timeout):
@@ -106,7 +74,7 @@ class DynamicBatcher:
             total_delay += delay
         return r
 
-    async def _wait_for_finish(self, stream_id: bytes, delay: int = 0.1, timeout=10) -> Optional[StreamBody]:
+    async def _wait_for_finish(self, stream_id: bytes, delay: int = 0.1, timeout=10) -> Optional[ResponseStream]:
         is_arrived = False
         total_delay = 0
         while is_arrived or (total_delay < timeout):
@@ -128,22 +96,22 @@ class DynamicBatcher:
             max=stream_id,
         )
         if messages:
-            message = Message(**messages[0])
+            message = PendingRequestStream(**messages[0])
             pending_time = (message.time_since_delivered - message.times_delivered) / 1000
             return message.message_id
         else:
             return
 
-    def _get_response_arrived_as_record(self, stream_id: bytes) -> Optional[StreamBody]:
+    def _get_response_arrived_as_record(self, stream_id: bytes) -> Optional[ResponseStream]:
         message: Optional[str] = self._redis_client.get(stream_id)
         if message:
             _body = json.loads(message)
             self._redis_client.delete(stream_id)
-            return StreamBody(stream_id, _body)
+            return ResponseStream(stream_id, _body)
         else:
             return
 
-    def _get_response_arrived_as_stream(self, stream_id: bytes) -> Optional[StreamBody]:
+    def _get_response_arrived_as_stream(self, stream_id: bytes) -> Optional[ResponseStream]:
         message: Optional[Dict] = self._redis_client.get(stream_id)
         messages: List = self._redis_client.xrange(
             self.response_key,
@@ -155,7 +123,7 @@ class DynamicBatcher:
             _id, _body = message
             self._redis_client.xack(self.response_key, self.batcher_group, _id)
             self._redis_client.xdel(self.response_key, _id)
-            return StreamBody(_id, _body)
+            return ResponseStream(_id, _body)
         else:
             return
 
@@ -218,7 +186,7 @@ class BatchProcessor:
             streams = [v[0] for i, v in requests]
             streams = sorted(streams, key=lambda x: x[0])
             stream_ids = [i for i, v in streams]
-            stream_bodies = [v for i, v in streams]
+            stream_bodies = [json.loads(v['body']) for i, v in streams]
 
             try:
                 results = func(stream_bodies)

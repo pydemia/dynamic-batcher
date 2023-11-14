@@ -63,8 +63,13 @@ async def read_item(
     return result
 
 
+class NestedKey(BaseModel):
+    key: str
+    values: List[int] = [1, 5, 2]
+
 class RequestItem(BaseModel):
     content: str
+    nested: NestedKey
 
 
 @app.post("/items/{item_id}")

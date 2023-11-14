@@ -18,9 +18,11 @@ DYNAMIC_BATCHER__BATCH_SIZE = int(os.getenv("DYNAMIC_BATCHER__BATCH_SIZE", "64")
 DYNAMIC_BATCHER__BATCH_TIME = int(os.getenv("DYNAMIC_BATCHER__BATCH_TIME", "2"))
 
 
-def set_name(bodies: List[Dict]) -> List[Dict]:
+def add_1(bodies: List[Dict]) -> List[Dict]:
     for body in bodies:
         body['name'] = f'{uuid.uuid4()}'
+        int_list = body['nested']['values']
+        body['nested']['values_add1'] = list(map(lambda x: x+1, int_list))
 
     return bodies
 
@@ -34,4 +36,4 @@ if __name__ == '__main__':
         batch_time=DYNAMIC_BATCHER__BATCH_TIME,
     )
 
-    asyncio.run(batch_processor.start_daemon(set_name))
+    asyncio.run(batch_processor.start_daemon(add_1))

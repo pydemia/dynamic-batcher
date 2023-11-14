@@ -1,7 +1,6 @@
 from typing import Optional
 import os
 import redis
-import subprocess
 from autologging import logged
 
 

@@ -66,11 +66,38 @@ pip install -r requirements-test.txt
     curl -X POST http://localhost:8000/items/test/1 \
       -H 'Content-Type: application/json' \
       -d '{
-        "content": "string"
-    }'
+        "content": "string",
+        "nested": {
+          "key": "string",
+          "values": [
+            1,
+            5,
+            2
+          ]
+        }
+      }'
     ```
     ```console
-    {"data":{"content":"string","name":"291c9d80-a201-476c-8eb1-2df9f46cba33"},"elapsed_time":3.5122482776641846}
+    {
+      "data": {
+        "content": "string",
+        "nested": {
+          "key": "string",
+          "values": [
+            1,
+            5,
+            2
+          ],
+          "values_add1": [
+            2,
+            6,
+            3
+          ]
+        },
+        "name": "b0878740-47a8-4dd7-bfe8-9c5ed1fee4ea"
+      },
+      "elapsed_time": 2.551218032836914
+    }
     ```
 * locust: http://localhost:8089
   ![locust-start](docs/img/locust-start.png)
