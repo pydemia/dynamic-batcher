@@ -1,11 +1,9 @@
-.. image:: https://unipy.readthedocs.io/en/latest/_images/logo_white_background.svg
-    :width: 400px
-    :alt: unipy logo
-    :align: center
+dynamic_batcher
+===============
 
 
 |Travis|_  |AppVeyor|_  |Coveralls|_  |Readthedocs|_   
-|PyPi|_  |Python35|_  |Python36|_ |DOI|_
+|PyPi|_  |Python39|_  |Python310|_ 
 
 
 .. |Travis| image:: https://travis-ci.org/pydemia/unipy.svg?branch=master
@@ -23,43 +21,170 @@
 .. |PyPi| image:: https://badge.fury.io/py/unipy.svg
 .. _PyPi: https://badge.fury.io/py/unipy.svg
 
-.. |Python35| image:: https://img.shields.io/badge/python-3.5-blue.svg 
-.. _Python35: https://badge.fury.io/py/unipy.svg 
+.. |Python39| image:: https://img.shields.io/badge/python-3.9-blue.svg 
+.. _Python39: https://badge.fury.io/py/unipy.svg 
 
-.. |Python36| image:: https://img.shields.io/badge/python-3.6-blue.svg 
-.. _Python36: https://badge.fury.io/py/unipy.svg 
-
-.. |DOI| image:: https://zenodo.org/badge/21369/pydemia/unipy.svg
-.. _DOI: https://zenodo.org/badge/latestdoi/21369/pydemia/unipy
+.. |Python310| image:: https://img.shields.io/badge/python-3.10-blue.svg 
+.. _Python310: https://badge.fury.io/py/unipy.svg 
 
 
-What's for?
-===========
-
-`unipy` is a toolkit for data scientists.
-This offers a number of scientific, statistical objects.
-This also contains many pythonic objects like 
-generators, decorators and function wrappers, etc.
-
-Some famous datasets embedded will make you easy to test.
-
-
-Installation
-============
-
-::
-
-    pip install unipy
-
-
-
-Usage
+Intro
 =====
 
-::
+`dynamic_batcher` is designed for inferencing DL models using GPU and enforces model's concurrency.
 
-    import unipy as up
-    import unipy.dataset.api as dm
+Installation
+------------
+
+.. code-block:: bash
+
+  pip install dynamic_batcher
+
+Quickstart
+----------
+
+Additional Requirements
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+  pip install -r requirements-test.txt
+
+Run
+^^^
+
+
+* redis  
+    - RUN:
+  
+      .. code-block:: bash
+
+         docker run --rm -p 6379:6379 -e ALLOW_EMPTY_PASSWORD=yes bitnami/redis:latest
+
+
+* `app <e2e/app/>`_
+    - ENV:
+
+      .. code-block::
+      
+        REDIS__HOST=localhost
+        REDIS__PORT=6379
+
+
+    - RUN:
+
+      .. code-block:: bash
+
+        gunicorn e2e.app.main:app \
+           -k=uvicorn.workers.UvicornWorker \
+           --workers=4
+
+
+* `batcher <e2e/batcher/>`_
+    - ENV:
+
+      .. code-block::
+
+        REDIS__HOST=localhost
+        REDIS__PORT=6379
+
+        DYNAMIC_BATCHER__BATCH_SIZE=64
+        DYNAMIC_BATCHER__BATCH_TIME=2
 
 
 
+    - RUN:
+
+      .. code-block:: bash
+
+        PYTHONPATH="$(pwd):${PYTHONPATH}" python e2e/batcher/run.py
+
+* `locust <e2e/locust/>`_
+    - RUN:
+
+      .. code-block:: bash
+
+        locust -f e2e/locust/locustfile.py
+
+
+Test
+^^^^
+
+
+* swagger: http://localhost:8000
+    - POST ``/items/test/{item_id}``
+
+        .. code-block:: bash
+
+          curl -X POST http://localhost:8000/items/test/1 \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "content": "string"
+          }'
+
+    - result:
+
+        .. code-block:: console
+
+          {"data":{"content":"string","name":"291c9d80-a201-476c-8eb1-2df9f46cba33"},"elapsed_time":3.5122482776641846}
+
+* locust: http://localhost:8089
+
+  .. image:: docs/img/locust-start.png
+     :target: docs/img/locust-start.png
+     :alt: locust-start
+
+  .. image:: docs/img/locust-run.png
+     :target: docs/img/locust-run.png
+     :alt: locust-run
+
+Explanation
+^^^^^^^^^^^
+
+when ``DYNAMIC_BATCHER__BATCH_SIZE=64`` and ``DYNAMIC_BATCHER__BATCH_TIME=2`` is set,
+
+a running ``BatchProcessor`` waits to run a batch until the amount of requests received is met(\ ``requests count=64``\ ), for the batch_time(\ ``2 seconds``\ ). If the time is up, the partial amount of requests will be processed.
+
+
+* Launch
+
+  .. code-block::
+  
+     start test daemon
+     BatchProcessor start: delay=0.001, batch_size=64 batch_time=2
+
+* Single request(concurrency=1)
+
+  .. code-block::
+  
+     batch start: 2.001/2, 1/64
+     batch start: 2,001/2, 1/64
+     ...
+
+* Concurrent requests(concurrency=100)
+
+  .. code-block::
+  
+     batch start: 1.653/2, 64/64
+     batch start: 0.064/2, 64/64
+     batch start: 0.064/2, 64/64
+     batch start: 0.064/2, 64/64
+     batch start: 0.064/2, 64/64
+     batch start: 0.064/2, 64/64
+     batch start: 0.064/2, 64/64
+     batch start: 0.064/2, 64/64
+     batch start: 0.064/2, 64/64
+     batch start: 0.064/2, 64/64
+     batch start: 0.064/2, 64/64
+     batch start: 0.064/2, 64/64
+     ...
+     batch start: 2.001/2, 36/64
+
+Concept
+=======
+
+Ref.: `NVIDIA Triton's dynamic batching <https://github.com/triton-inference-server/tutorials/tree/main/Conceptual_Guide/Part_2-improving_resource_utilization#what-is-dynamic-batching>`_
+
+.. image:: docs/img/dynamic_batching-triton.png
+   :target: docs/img/dynamic_batching-triton.png
+   :alt: dynamic_batching-triton
