@@ -1,42 +1,20 @@
 from typing import Optional, List, Dict
-import asyncio
+import os
+import time
 import uuid
 import random
-from fastapi import FastAPI
+import asyncio
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from fastapi.responses import RedirectResponse
 
 from dynamic_batcher import DynamicBatcher
 
 
-def set_name(bodies: List[Dict]) -> List[Dict]:
-    for body in bodies:
-        body['name'] = f'{uuid.uuid4()}'
-
-    return bodies
-
-from contextlib import asynccontextmanager
-from dynamic_batcher import BatchProcessor
-
-# batch_processor = BatchProcessor(batch_size=64, batch_time=10)
-
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     # batch_processor.start_daemon(set_name)
-#     while True:
-#         asyncio.run(batch_processor.run(set_name))
-
-# loop = asyncio.get_event_loop()
-# loop.create_task(batch_processor.start_daemon(set_name))
-# loop.run_forever()
-# while True:
-#     asyncio.run(batch_processor.run(set_name))
-# batch_processor.start_daemon(set_name)
+def get_dynamic_batcher():
+    return DynamicBatcher(delay=0.01, timeout=100)
 
 
-# asyncio.run(batch_processor.start_daemon(set_name))
-
-# app = FastAPI(lifespan=lifespan)
 app = FastAPI()
 
 
@@ -93,12 +71,12 @@ class RequestItem(BaseModel):
 async def infer_item(
         body: RequestItem,
         delay: Optional[int] = None,
+        batcher: DynamicBatcher = Depends(get_dynamic_batcher),
     ):
     if delay:
         delay = random.randint(0, delay - 1) + random.random()
         await asyncio.sleep(delay)
 
-    batcher = DynamicBatcher()
     resp = await batcher.asend(body.model_dump())
     result = {
         "item_id": resp.body,
@@ -111,16 +89,17 @@ async def infer_item(
 async def infer_test_item(
         body: RequestItem,
         delay: Optional[int] = None,
+        batcher: DynamicBatcher = Depends(get_dynamic_batcher),
     ):
+    start_t = time.time()
     if delay:
         delay = random.randint(0, delay - 1) + random.random()
         await asyncio.sleep(delay)
 
-    batcher = DynamicBatcher()
     resp = await batcher.asend(body.model_dump())
     result = {
         "item_id": resp.body,
-        "delay": delay,
+        "elapsed_time": time.time() - start_t,
     }
     return result
 

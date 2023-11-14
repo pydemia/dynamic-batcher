@@ -61,15 +61,15 @@
             "name": "Run: BatchProcessor",
             "type": "python",
             "request": "launch",
-            "module": "dynamic_batcher",
+            "program": "run.py",
             "args": [
               ],
               "env": {
                 "PYTHONPATH": "${workspaceFolder}:${env:PYTHONPATH}"
               },
-            //   "cwd": "${workspaceFolder}/e2e/app",
+              "cwd": "${workspaceFolder}/e2e/batcher",
               "console": "internalConsole",
-            //   "envFile": "${workspaceFolder}/e2e/app/.env",
+              "envFile": "${workspaceFolder}/e2e/batcher/.env",
               "justMyCode": true,
         }
     ]
