@@ -96,9 +96,9 @@ async def infer_test_item(
         delay = random.randint(0, delay - 1) + random.random()
         await asyncio.sleep(delay)
 
-    resp = await batcher.asend(body.model_dump())
+    resp_body = await batcher.asend(body.model_dump())
     result = {
-        "item_id": resp.body,
+        "data": resp_body,
         "elapsed_time": time.time() - start_t,
     }
     return result

@@ -81,7 +81,7 @@ class DynamicBatcher:
         requested_stream_id: bytes = self._redis_client.xadd(self.request_key, body)
         r = await self._wait_for_start(requested_stream_id, delay=self.delay, timeout=self.timeout)
         r = await self._wait_for_finish(requested_stream_id, delay=self.delay, timeout=self.timeout)
-        return r
+        return r.body
 
     
     def get_stream_by_id(self, stream_id: bytes) -> Optional[StreamBody]:
@@ -111,16 +111,13 @@ class DynamicBatcher:
         is_arrived = False
         total_delay = 0
         while is_arrived or (total_delay < timeout):
-            r = self._get_response_arrived(stream_id)
+            r = self._get_response_arrived_as_record(stream_id)
             if r:
                 is_arrived = True
                 break
             await asyncio.sleep(delay)
             total_delay += delay
 
-        self._redis_client.xdel(self.response_key, r.stream_id)
-
-        # self._redis_client.getdel(stream_id)
         return r
 
     def _get_request_accepted(self, stream_id: bytes) -> Optional[bytes]:
@@ -138,8 +135,17 @@ class DynamicBatcher:
         else:
             return
 
-    def _get_response_arrived(self, stream_id: bytes) -> Optional[StreamBody]:
-        # self._redis_client.getdel(stream_id)
+    def _get_response_arrived_as_record(self, stream_id: bytes) -> Optional[StreamBody]:
+        message: Optional[str] = self._redis_client.get(stream_id)
+        if message:
+            _body = json.loads(message)
+            self._redis_client.delete(stream_id)
+            return StreamBody(stream_id, _body)
+        else:
+            return
+
+    def _get_response_arrived_as_stream(self, stream_id: bytes) -> Optional[StreamBody]:
+        message: Optional[Dict] = self._redis_client.get(stream_id)
         messages: List = self._redis_client.xrange(
             self.response_key,
             min=stream_id,
@@ -148,15 +154,11 @@ class DynamicBatcher:
         if messages:
             message = messages[0]
             _id, _body = message
-            self._redis_client.xack(
-                self.response_key,
-                self.batcher_group,
-                _id,
-            )
+            self._redis_client.xack(self.response_key, self.batcher_group, _id)
+            self._redis_client.xdel(self.response_key, _id)
             return StreamBody(_id, _body)
         else:
             return
-
 
 @logged
 class BatchProcessor:
@@ -198,6 +200,9 @@ class BatchProcessor:
         batch_gathered = 0
         requests = []
         while delay_period < self.batch_time and batch_gathered < self.batch_size:
+            # self.__log.debug(
+            #     f'alive: {delay_period:.3f}/{self.batch_time}, {batch_gathered}/{self.batch_size}'
+            # )
             new_request = await self.get_next_request()
             if new_request:
                 requests.extend(new_request)
@@ -221,21 +226,27 @@ class BatchProcessor:
             except Exception as e:
                 self.__log.error(f'Error while running `{func.__name__}`: {e}')
 
-            #TODO: Change Redis Stream to Default If the following message keep raised.
-            # redis.exceptions.ResponseError:
-            # The ID specified in XADD is equal or smaller than the target stream top item
-            for stream_id, stream_body in zip(stream_ids, results):
-                # self._redis_client.set(stream_id, json.dumps(stream_body))
-                # self._redis_client.getdel(stream_id)
-                self._redis_client.xadd(
-                    self.response_key,
-                    stream_body,
-                    stream_id,
-                )
-            self._redis_client.xack(self.request_key, self.processor_group, *stream_ids)
-            self._redis_client.xdel(self.request_key, *stream_ids)
+            await self.mark_as_finished_as_record(stream_ids, results)
 
-    
+
+    async def mark_as_finished_as_record(self, stream_ids: List[str], results: List[Dict]) -> None:
+        for stream_id, stream_body in zip(stream_ids, results):
+            self._redis_client.set(stream_id, json.dumps(stream_body))
+
+        self._redis_client.xdel(self.request_key, *stream_ids)
+
+
+    async def mark_as_finished_as_stream(self, stream_ids: List[str], results: List[Dict]) -> None:
+        for stream_id, stream_body in zip(stream_ids, results):
+            self._redis_client.xadd(
+                self.response_key,
+                stream_body,
+                stream_id,
+            )
+        # self._redis_client.xack(self.request_key, self.processor_group, *stream_ids)
+        self._redis_client.xdel(self.request_key, *stream_ids)
+
+
     async def get_next_request(self) -> Optional[List]:
 
         try:
@@ -244,7 +255,7 @@ class BatchProcessor:
                 consumername=self.processor_group,
                 streams={self.request_key: '>'},
                 count=1,
-                block=self.batch_time,
+                # block=self.batch_time,
                 noack=False,
             )
             if requests:
