@@ -130,18 +130,18 @@ def get_client(
         )
 
 
-    r = redis_client.xadd(REDIS__STREAM_KEY_REQUEST, {"body": 0})
-    redis_client.xdel(REDIS__STREAM_KEY_REQUEST, r)
+    # r = redis_client.xadd(REDIS__STREAM_KEY_REQUEST, {"body": 0})
+    # redis_client.xdel(REDIS__STREAM_KEY_REQUEST, r)
 
-    r = redis_client.xadd(REDIS__STREAM_KEY_RESPONSE, {"body": 0})
-    redis_client.xdel(REDIS__STREAM_KEY_RESPONSE, r)
+    # r = redis_client.xadd(REDIS__STREAM_KEY_RESPONSE, {"body": 0})
+    # redis_client.xdel(REDIS__STREAM_KEY_RESPONSE, r)
 
     try:
         redis_client.xgroup_create(
             name=REDIS__STREAM_KEY_REQUEST,
             groupname=REDIS__STREAM_GROUP_PROCESSOR,
             # id=0,
-            # mkstream=True,
+            mkstream=True,
         )
     except redis.ResponseError as e:
         pass
@@ -151,7 +151,7 @@ def get_client(
             name=REDIS__STREAM_KEY_RESPONSE,
             groupname=REDIS__STREAM_GROUP_BATCHER,
             # id=0,
-            # mkstream=True,
+            mkstream=True,
         )
     except redis.ResponseError as e:
         pass

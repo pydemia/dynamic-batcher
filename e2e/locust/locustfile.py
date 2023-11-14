@@ -12,17 +12,26 @@ class QuickstartUser(FastHttpUser):
     #     self.client.post(f"/items/test/{i}", json={"content": f"{i}"})
     #     # self.client.get("/world")
 
-    @task
-    def t(self):
-        def concurrent_request(x):
-            i = random.randint(0, 1000)
-            self.client.post(f"/items/test/{i}", json={"content": f"{i}"})
+    # @task
+    # def t(self):
+    #     def concurrent_request(x):
+    #         i = random.randint(0, 1000)
+    #         self.client.post(f"/items/test/{i}", json={"content": f"{i}"})
 
-        pool = gevent.pool.Pool()
-        # urls = ["/url1", "/url2", "/url3"]
-        for i in range(100):
-            pool.spawn(concurrent_request, i)
-        pool.join()
+    #     pool = gevent.pool.Pool()
+    #     # urls = ["/url1", "/url2", "/url3"]
+    #     for i in range(100):
+    #         pool.spawn(concurrent_request, i)
+    #     pool.join()
+
+    @task
+    def send_concurrent_request(self):
+        i = random.randint(0, 1000)
+        self.client.post(
+            f"/items/test/{i}",
+            json={"content": f"content{i}"},
+        )
+
     # @task
     # def hello_world(self):
     #     self.client.get("/hello")

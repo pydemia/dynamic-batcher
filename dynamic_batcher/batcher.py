@@ -34,26 +34,21 @@ __all__ = [
 ]
 
 
-# REDIS__HOST = os.getenv("REDIS__HOST", "localhost")
-# REDIS__PORT = int(os.getenv("REDIS__PORT", "6379"))
-# REDIS__DB = int(os.getenv("REDIS__DB", "0"))
-# REDIS__PASSWORD = os.getenv("REDIS__PASSWORD", None)
-# REDIS__STREAM_KEY = os.getenv("REDIS__STREAM_KEY", "skey")
-# REDIS__STREAM_GROUP = os.getenv("REDIS__STREAM_GROUP", "sgroup")
+DYNAMIC_BATCHER__BATCH_SIZE = int(os.getenv("DYNAMIC_BATCHER__BATCH_SIZE", "64"))
+DYNAMIC_BATCHER__BATCH_TIME = int(os.getenv("DYNAMIC_BATCHER__BATCH_TIME", "2"))
 
-
-# if bool(USE_LOCAL_REDIS):
-#     launch()
 
 class StreamBody(NamedTuple):
     stream_id: bytes
     body: List | Dict
+
 
 class Message(NamedTuple):
     message_id: bytes
     consumer: bytes
     time_since_delivered: int
     times_delivered: int
+
 
 @logged
 class DynamicBatcher:
@@ -65,7 +60,7 @@ class DynamicBatcher:
             # password: Optional[str] = None,
             # key="infer",
             # group="infergrp",
-            delay: int = 0.1,
+            delay: int = 0.01,
             timeout: int = 100,
         ):
         self._redis_client = get_client(
@@ -82,20 +77,7 @@ class DynamicBatcher:
         self.delay = delay
         self.timeout = timeout
 
-    # def set_key_value(self, key: str, value) -> bool:
-    #     return self._redis_client.set(key=key, value=value)
-    
-    # def info_group(self):
-    #     return self._redis_client.xinfo_groups(self.group)
-    
-    # def info_key(self):
-    #     return self._redis_client.xinfo_stream(self.key)
-    
-    # def info_consumer(self):
-    #     return self._redis_client.xinfo_consumers(self.key, self.group)
-
     async def asend(self, body: Dict, *args, **kwargs) -> Optional[StreamBody]:
-        # requested_stream_id: bytes = self._redis_client.xadd(self.request_key, {'body': json.dumps(body)})
         requested_stream_id: bytes = self._redis_client.xadd(self.request_key, body)
         r = await self._wait_for_start(requested_stream_id, delay=self.delay, timeout=self.timeout)
         r = await self._wait_for_finish(requested_stream_id, delay=self.delay, timeout=self.timeout)
@@ -123,7 +105,6 @@ class DynamicBatcher:
                 break
             await asyncio.sleep(delay)
             total_delay += delay
-        # self._redis_client.xdel(self.request_key, r.stream_id)
         return r
 
     async def _wait_for_finish(self, stream_id: bytes, delay: int = 0.1, timeout=10) -> Optional[StreamBody]:
@@ -138,6 +119,8 @@ class DynamicBatcher:
             total_delay += delay
 
         self._redis_client.xdel(self.response_key, r.stream_id)
+
+        # self._redis_client.getdel(stream_id)
         return r
 
     def _get_request_accepted(self, stream_id: bytes) -> Optional[bytes]:
@@ -156,20 +139,13 @@ class DynamicBatcher:
             return
 
     def _get_response_arrived(self, stream_id: bytes) -> Optional[StreamBody]:
-        # messages: List = self._redis_client.xpending_range(
-        #     self.response_key,
-        #     groupname=self.batcher_group,
-        #     count=1,
-        #     min=stream_id,
-        #     max=stream_id,
-        # )
+        # self._redis_client.getdel(stream_id)
         messages: List = self._redis_client.xrange(
             self.response_key,
             min=stream_id,
             max=stream_id,
         )
         if messages:
-            # message = Message(**messages[0])
             message = messages[0]
             _id, _body = message
             self._redis_client.xack(
@@ -181,41 +157,18 @@ class DynamicBatcher:
         else:
             return
 
-    # async def _check_response_arrived(self, stream_id: bytes):
-    #     # messages: List = self._redis_client.xreadgroup
-    #     self._check_request_accepted(stream_id=stream_id)
-    #     messages: List = self._redis_client.xrange(
-    #         self.response_key,
-    #         min=stream_id,
-    #         max=stream_id,
-    #     )
-    #     if messages:
-    #         return messages[0]
-    #     else:
-    #         return 
-
 
 @logged
 class BatchProcessor:
     def __init__(
             self,
-            batch_time: int = 2,
             batch_size: int = 64,
-            # host: str = "localhost",
-            # port: int = 6379,
-            # db: int = 0,
-            # password: Optional[str] = None,
-            # key="infer",
-            # group="infergrp",
+            batch_time: int = 2,
         ):
-        # if not self.__log:
-        #     import logging, sys
-        #     logging.basicConfig(stream=sys.stdout)
-        #     self.__log = logging.getLogger(self.__class__.__name__)
-        #     self.__log.setLevel(os.getenv('LOG_LEVEL', logging.DEBUG))
-        self.delay = 0.1
-        self.batch_time = batch_time
+
+        self.delay = 0.001
         self.batch_size = batch_size
+        self.batch_time = batch_time
         self._redis_client = get_client(
             host=REDIS__HOST,
             port=REDIS__PORT,
@@ -230,33 +183,22 @@ class BatchProcessor:
     async def start_daemon(self, func: Callable) -> None:
         self.__log.info(
             ' '.join([
-                f'BatchProcessor start:',
+                'BatchProcessor start:',
                 f'delay={self.delay},',
-                f'batch_time={self.batch_time}',
                 f'batch_size={self.batch_size}',
+                f'batch_time={self.batch_time}',
             ])
         )
         while True:
-            asyncio.run(self.run(func))
+            await self.run(func)
 
-        # loop.create_task(self.run(func))
-
-
-        # while True:
-        #     await asyncio.run(self.run(func))
 
     async def run(self, func: Callable) -> None:
         delay_period = 0
         batch_gathered = 0
         requests = []
         while delay_period < self.batch_time and batch_gathered < self.batch_size:
-            # self.__log.debug(
-            #     f'get_next_batch: {delay_period}/{self.batch_time}, {batch_gathered}/{self.batch_size}'
-            # )
-            # print(
-            #     f'get_next_batch: {delay_period}/{self.batch_time}, {batch_gathered}/{self.batch_size}'
-            # )
-            new_request = await self.get_next_batch()
+            new_request = await self.get_next_request()
             if new_request:
                 requests.extend(new_request)
 
@@ -266,10 +208,11 @@ class BatchProcessor:
             await asyncio.sleep(self.delay)
 
         if requests:
-            print(f'batch start: {delay_period}/{self.batch_time}, {batch_gathered}/{self.batch_size}')
-            # self.__log.debug(f'batch start: {delay_period}/{self.batch_time}, {batch_gathered}/{self.batch_size}')
+            self.__log.debug(
+                f'batch start: {delay_period:.3f}/{self.batch_time}, {batch_gathered}/{self.batch_size}'
+            )
             streams = [v[0] for i, v in requests]
-            streams = sorted(streams, key=lambda x: x[0], reverse=True)
+            streams = sorted(streams, key=lambda x: x[0])
             stream_ids = [i for i, v in streams]
             stream_bodies = [v for i, v in streams]
 
@@ -278,18 +221,14 @@ class BatchProcessor:
             except Exception as e:
                 self.__log.error(f'Error while running `{func.__name__}`: {e}')
 
-            #TODO: 
-            # Exception has occurred: ResponseError
+            #TODO: Change Redis Stream to Default If the following message keep raised.
+            # redis.exceptions.ResponseError:
             # The ID specified in XADD is equal or smaller than the target stream top item
-            # File "/Users/a09255/git/dynamic_batcher/dynamic_batcher/batcher.py", line 282, in run
-            #     self._redis_client.xadd(
-            # File "/Users/a09255/git/dynamic_batcher/dynamic_batcher/__main__.py", line 23, in <module>
-            #     asyncio.run(batch_processor.run(set_name))
-            # redis.exceptions.ResponseError: The ID specified in XADD is equal or smaller than the target stream top item
             for stream_id, stream_body in zip(stream_ids, results):
+                # self._redis_client.set(stream_id, json.dumps(stream_body))
+                # self._redis_client.getdel(stream_id)
                 self._redis_client.xadd(
                     self.response_key,
-                    # {'body': json.dumps(stream_body)},
                     stream_body,
                     stream_id,
                 )
@@ -297,25 +236,17 @@ class BatchProcessor:
             self._redis_client.xdel(self.request_key, *stream_ids)
 
     
-    async def get_next_batch(self) -> Optional[List]:
+    async def get_next_request(self) -> Optional[List]:
 
         try:
             requests: List = self._redis_client.xreadgroup(
                 groupname=self.processor_group,
                 consumername=self.processor_group,
                 streams={self.request_key: '>'},
-                # count=self.batch_size,
                 count=1,
                 block=self.batch_time,
                 noack=False,
             )
-            # self._redis_client.xreadgroup(
-            #     groupname=self.processor_group,
-            #     consumername='c',
-            #     streams={self.request_key: 1},
-            #     block=self.batch_time,
-            #     noack=False,
-            # )
             if requests:
                 return requests
             else:
