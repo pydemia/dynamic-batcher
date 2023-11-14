@@ -59,4 +59,4 @@ exclude = [
 
 [tool.setuptools.dynamic]
 version = {attr = "dynamic_batcher.__version__"}
-readme = {file = ["README.md"]}
+readme = {file = ["README.rst"]}

@@ -3,3 +3,7 @@ gunicorn
 uvicorn
 locust
 python-dotenv
+setuptools
+wheel
+build
+twine

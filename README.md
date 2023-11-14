@@ -1,6 +1,7 @@
-# dynamic_batcher
+dynamic_batcher
+===============
 
-It is designed for inferencing DL models using GPU and enforces model's concurrency.
+`dynamic_batcher` is designed for inferencing DL models using GPU and enforces model's concurrency.
 
 ### Installation
 
