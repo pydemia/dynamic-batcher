@@ -14,7 +14,7 @@ sys.path.insert(0, Path(__file__).parents[2].resolve().as_posix())
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'dynamic_batcher'
+project = 'dynamic-batcher'
 copyright = '2023, pydemia'
 author = 'pydemia'
 release = 'v1.0.2'
