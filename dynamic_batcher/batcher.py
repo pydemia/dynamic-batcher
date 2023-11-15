@@ -2,6 +2,7 @@ from typing import Optional, List, Dict, Callable, NamedTuple
 import os
 import json
 import asyncio
+import redis
 from autologging import logged
 
 from .redis_engine import (
@@ -30,6 +31,39 @@ DYNAMIC_BATCHER__BATCH_TIME = int(os.getenv("DYNAMIC_BATCHER__BATCH_TIME", "2"))
 
 @logged
 class DynamicBatcher:
+    """A Client class for dynamic batch processing.
+    A `DynamicBatcher` tries to connect a redis server with connection info., given by the following ENVVAR:
+
+        REDIS__HOST=localhost
+        REDIS__PORT=6379
+        REDIS__DB=0
+        REDIS__PASSWORD=
+
+    Args:
+        delay (int): Seconds of frequency to parse a response, corresponding a request sent. Defaults to 0.01.
+        timeout (int): Seconds of deadline to wait for a response. Defaults to 100.
+            If `timeout` is too large, it will be stuck on waiting too long, which is not intended.
+            If `timeout` is too small, it will work as impatient, not waiting for the batch process is finished.
+    
+    Attributes:
+        delay (int): Seconds of frequency to parse a response, corresponding a request sent.
+        timeout (int): Seconds of deadline to wait for a response.
+
+    Example:
+        Create a batcher:
+            >>> from dynamic_batcher import DynamicBatcher
+            >>> batcher = DynamicBatcher()
+        
+        You can give some parameters:
+            >>> lazy_batcher = DynamicBatcher(delay=1)
+        
+        Or, create a fail-fast batcher:
+            >>> fail_fast_batcher = DynamicBatcher(timeout=3)
+    
+    Raises:
+        redis.exceptions.ConnectionError: a redis server is not available.
+
+    """
     def __init__(
             self,
             # host: str = "localhost",
@@ -47,19 +81,69 @@ class DynamicBatcher:
             db=REDIS__DB,
             password=REDIS__PASSWORD,
         )
-        self.request_key = REDIS__STREAM_KEY_REQUEST
-        self.response_key = REDIS__STREAM_KEY_RESPONSE
-        self.processor_group = REDIS__STREAM_GROUP_PROCESSOR
-        self.batcher_group = REDIS__STREAM_GROUP_BATCHER
+        self._request_key: str = REDIS__STREAM_KEY_REQUEST
+        self._response_key: str = REDIS__STREAM_KEY_RESPONSE
+        self._processor_group: str = REDIS__STREAM_GROUP_PROCESSOR
+        self._batcher_group: str = REDIS__STREAM_GROUP_BATCHER
 
         self.delay = delay
         self.timeout = timeout
 
-    async def asend(self, body: Dict, *args, **kwargs) -> Optional[ResponseStream]:
-        requested_stream_id: bytes = self._redis_client.xadd(self.request_key, {"body": json.dumps(body)})
-        r = await self._wait_for_start(requested_stream_id, delay=self.delay, timeout=self.timeout)
-        r = await self._wait_for_finish(requested_stream_id, delay=self.delay, timeout=self.timeout)
-        return r.body
+    async def asend(self, body: Dict|List, *args, **kwargs) -> Optional[Dict|List]:
+        """Send a request and wait for a response, with JSON-serializable body.
+
+        Args:
+            body (:obj: `Dict` or `List`): A JSON-serializable object, especially `Dict` or `List`.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        
+        Returns:
+            Dict or List: optional
+        
+        Example:
+
+            >>> from fastapi import FastAPI
+            >>> from pydantic import BaseModel
+            >>> from dynamic_batcher import DynamicBatcher
+            >>> 
+            >>> app = FastAPI()
+            >>> batcher = DynamicBatcher()
+            >>> 
+            >>> class NestedKey(BaseModel):
+            >>>     key: str
+            >>>     values: List[int] = [1, 5, 2]
+            >>> 
+            >>> class RequestItem(BaseModel):
+            >>>     content: str
+            >>>     nested: NestedKey
+            >>> 
+            >>> @app.post("/items/test/{item_id}")
+            >>> async def infer_test_item(body: RequestItem):
+            >>>     resp_body = await batcher.asend(body.model_dump())
+            >>>     result = {
+            >>>         "data": resp_body,
+            >>>     }
+            >>>     return result
+        """
+        try:
+            json_body = json.dumps(body)
+        except json.JSONDecodeError as json_e:
+            self.__log.error(f"cannot serialize request body: {json_e}\n{json_e.with_traceback}")
+            return
+        try:
+            requested_stream_id: bytes = self._redis_client.xadd(self._request_key, {"body": json_body})
+            r = await self._wait_for_start(requested_stream_id, delay=self.delay, timeout=self.timeout)
+            r = await self._wait_for_finish(requested_stream_id, delay=self.delay, timeout=self.timeout)
+            return r.body
+        except redis.RedisError as redis_e:
+            self.__log.error(f"redis not available: {redis_e}\n{redis_e.with_traceback}")
+            return
+        except json.JSONDecodeError as json_e:
+            self.__log.error(f"cannot de-serialize response body: {json_e}\n{json_e.with_traceback}")
+            return
+        except Exception as unknown_e:
+            self.__log.error(f"failed to respond (unknown): {unknown_e}")
+            return
 
 
     async def _wait_for_start(self, stream_id: bytes, delay: int = 0.1, timeout=10) -> Optional[ResponseStream]:
@@ -84,13 +168,12 @@ class DynamicBatcher:
                 break
             await asyncio.sleep(delay)
             total_delay += delay
-
         return r
 
     def _get_request_accepted(self, stream_id: bytes) -> Optional[bytes]:
         messages: List = self._redis_client.xpending_range(
-            self.request_key,
-            groupname=self.processor_group,
+            self._request_key,
+            groupname=self._processor_group,
             count=1,
             min=stream_id,
             max=stream_id,
@@ -114,21 +197,56 @@ class DynamicBatcher:
     def _get_response_arrived_as_stream(self, stream_id: bytes) -> Optional[ResponseStream]:
         message: Optional[Dict] = self._redis_client.get(stream_id)
         messages: List = self._redis_client.xrange(
-            self.response_key,
+            self._response_key,
             min=stream_id,
             max=stream_id,
         )
         if messages:
             message = messages[0]
             _id, _body = message
-            self._redis_client.xack(self.response_key, self.batcher_group, _id)
-            self._redis_client.xdel(self.response_key, _id)
+            self._redis_client.xack(self._response_key, self._batcher_group, _id)
+            self._redis_client.xdel(self._response_key, _id)
             return ResponseStream(_id, _body)
         else:
             return
 
 @logged
 class BatchProcessor:
+    """A Client class for dynamic batch processing.
+    A `DynamicBatcher` tries to connect a redis server with connection info., given by the following ENVVAR:
+
+        REDIS__HOST=localhost
+        REDIS__PORT=6379
+        REDIS__DB=0
+        REDIS__PASSWORD=
+        DYNAMIC_BATCHER__BATCH_SIZE=64
+        DYNAMIC_BATCHER__BATCH_TIME=2
+
+    Args:
+        delay (int): Seconds of frequency to parse a response, corresponding a request sent. Defaults to 0.01.
+        timeout (int): Seconds of deadline to wait for a response. Defaults to 100.
+            If `timeout` is too large, it will be stuck on waiting too long, which is not intended.
+            If `timeout` is too small, it will work as impatient, not waiting for the batch process is finished.
+    
+    Attributes:
+        delay (int): Seconds of frequency to parse a response, corresponding a request sent.
+        timeout (int): Seconds of deadline to wait for a response.
+
+    Example:
+        Create a batcher:
+            >>> from dynamic_batcher import DynamicBatcher
+            >>> batcher = DynamicBatcher()
+        
+        You can give some parameters:
+            >>> lazy_batcher = DynamicBatcher(delay=1)
+        
+        Or, create a fail-fast batcher:
+            >>> fail_fast_batcher = DynamicBatcher(timeout=3)
+    
+    Raises:
+        redis.exceptions.ConnectionError: a redis server is not available.
+    """
+
     def __init__(
             self,
             batch_size: int = 64,
@@ -144,12 +262,25 @@ class BatchProcessor:
             db=REDIS__DB,
             password=REDIS__PASSWORD,
         )
-        self.request_key = REDIS__STREAM_KEY_REQUEST
-        self.response_key = REDIS__STREAM_KEY_RESPONSE
-        self.processor_group = REDIS__STREAM_GROUP_PROCESSOR
-        self.batcher_group = REDIS__STREAM_GROUP_BATCHER
+        self._request_key = REDIS__STREAM_KEY_REQUEST
+        self._response_key = REDIS__STREAM_KEY_RESPONSE
+        self._processor_group = REDIS__STREAM_GROUP_PROCESSOR
+        self._batcher_group = REDIS__STREAM_GROUP_BATCHER
 
     async def start_daemon(self, func: Callable) -> None:
+        """Start a single batch process as a daemon.
+        This will concatenate given requests to one batch, call `func`, and split into corresponding responses.
+
+        Args:
+            func (:obj: `Callable`): A callable object, like function or method.
+                `func` should have only one positional argument.
+                , and its type should be `List`, to handle the argument as a scalable batch.
+                The type of the argument and the returning value should be `List`, to handle a scalable batch and operate elementwisely.
+                Also both argument and returning value should be `JSON (de)serializable`.
+
+        Returns:
+            None
+        """
         self.__log.info(
             ' '.join([
                 'BatchProcessor start:',
@@ -159,10 +290,10 @@ class BatchProcessor:
             ])
         )
         while True:
-            await self.run(func)
+            await self._run(func)
 
 
-    async def run(self, func: Callable) -> None:
+    async def _run(self, func: Callable) -> None:
         delay_period = 0
         batch_gathered = 0
         requests = []
@@ -170,7 +301,7 @@ class BatchProcessor:
             # self.__log.debug(
             #     f'alive: {delay_period:.3f}/{self.batch_time}, {batch_gathered}/{self.batch_size}'
             # )
-            new_request = await self.get_next_request()
+            new_request = await self._get_next_request()
             if new_request:
                 requests.extend(new_request)
 
@@ -193,34 +324,34 @@ class BatchProcessor:
             except Exception as e:
                 self.__log.error(f'Error while running `{func.__name__}`: {e}')
 
-            await self.mark_as_finished_as_record(stream_ids, results)
+            await self._mark_as_finished_as_record(stream_ids, results)
 
 
-    async def mark_as_finished_as_record(self, stream_ids: List[str], results: List[Dict]) -> None:
+    async def _mark_as_finished_as_record(self, stream_ids: List[str], results: List[Dict]) -> None:
         for stream_id, stream_body in zip(stream_ids, results):
             self._redis_client.set(stream_id, json.dumps(stream_body))
 
-        self._redis_client.xdel(self.request_key, *stream_ids)
+        self._redis_client.xdel(self._request_key, *stream_ids)
 
 
-    async def mark_as_finished_as_stream(self, stream_ids: List[str], results: List[Dict]) -> None:
+    async def _mark_as_finished_as_stream(self, stream_ids: List[str], results: List[Dict]) -> None:
         for stream_id, stream_body in zip(stream_ids, results):
             self._redis_client.xadd(
-                self.response_key,
+                self._response_key,
                 stream_body,
                 stream_id,
             )
         # self._redis_client.xack(self.request_key, self.processor_group, *stream_ids)
-        self._redis_client.xdel(self.request_key, *stream_ids)
+        self._redis_client.xdel(self._request_key, *stream_ids)
 
 
-    async def get_next_request(self) -> Optional[List]:
+    async def _get_next_request(self) -> Optional[List]:
 
         try:
             requests: List = self._redis_client.xreadgroup(
-                groupname=self.processor_group,
-                consumername=self.processor_group,
-                streams={self.request_key: '>'},
+                groupname=self._processor_group,
+                consumername=self._processor_group,
+                streams={self._request_key: '>'},
                 count=1,
                 # block=self.batch_time,
                 noack=False,
