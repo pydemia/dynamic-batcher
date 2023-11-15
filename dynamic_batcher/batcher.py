@@ -1,3 +1,17 @@
+"""
+====================================
+ :mod:`batcher` Module
+====================================
+.. moduleauthor:: Youngju Jaden Kim <pydemia@gmail.com>
+.. note:: Info
+
+Info
+====
+    `DynamicBatcher` and `BatchProcessor`
+
+"""
+
+
 from typing import Optional, List, Dict, Callable, NamedTuple
 import os
 import json
@@ -32,22 +46,29 @@ DYNAMIC_BATCHER__BATCH_TIME = int(os.getenv("DYNAMIC_BATCHER__BATCH_TIME", "2"))
 @logged
 class DynamicBatcher:
     """A Client class for dynamic batch processing.
-    A `DynamicBatcher` tries to connect a redis server with connection info., given by the following ENVVAR:
+    A `DynamicBatcher` tries to connect a redis server with connection info., given by the following ``ENVVAR``:
 
-        REDIS__HOST=localhost
-        REDIS__PORT=6379
-        REDIS__DB=0
-        REDIS__PASSWORD=
+        .. code-block:: bash
+
+            REDIS__HOST=localhost
+            REDIS__PORT=6379
+            REDIS__DB=0
+            REDIS__PASSWORD=
 
     Args:
-        delay (int): Seconds of frequency to parse a response, corresponding a request sent. Defaults to 0.01.
-        timeout (int): Seconds of deadline to wait for a response. Defaults to 100.
+        delay (int):
+            Seconds of frequency to parse a response, corresponding a request sent. Defaults to ``0.01``.
+        
+        timeout (int):
+            Seconds of deadline to wait for a response. Defaults to ``100``.
             If `timeout` is too large, it will be stuck on waiting too long, which is not intended.
             If `timeout` is too small, it will work as impatient, not waiting for the batch process is finished.
     
     Attributes:
-        delay (int): Seconds of frequency to parse a response, corresponding a request sent.
-        timeout (int): Seconds of deadline to wait for a response.
+        delay (int):
+            Seconds of frequency to parse a response, corresponding a request sent.
+        timeout (int):
+            Seconds of deadline to wait for a response.
 
     Example:
         Create a batcher:
@@ -93,9 +114,9 @@ class DynamicBatcher:
         """Send a request and wait for a response, with JSON-serializable body.
 
         Args:
-            body (:obj: `Dict` or `List`): A JSON-serializable object, especially `Dict` or `List`.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            body (:obj: ``Dict`` or ``List``): A **JSON-serializable object**, especially ``Dict`` or ``List``.
+            \*args: Variable length argument list.
+            \**kwargs: Arbitrary keyword arguments.
         
         Returns:
             Dict or List: optional
@@ -213,24 +234,43 @@ class DynamicBatcher:
 @logged
 class BatchProcessor:
     """A Client class for dynamic batch processing.
-    A `DynamicBatcher` tries to connect a redis server with connection info., given by the following ENVVAR:
+    A `BatchProcessor` tries to connect a redis server with connection info., given by the following ``ENVVAR``:
 
-        REDIS__HOST=localhost
-        REDIS__PORT=6379
-        REDIS__DB=0
-        REDIS__PASSWORD=
-        DYNAMIC_BATCHER__BATCH_SIZE=64
-        DYNAMIC_BATCHER__BATCH_TIME=2
+        .. code-block:: bash
+
+            REDIS__HOST=localhost
+            REDIS__PORT=6379
+            REDIS__DB=0
+            REDIS__PASSWORD=
+            
+            DYNAMIC_BATCHER__BATCH_SIZE=64
+            DYNAMIC_BATCHER__BATCH_TIME=2
 
     Args:
-        delay (int): Seconds of frequency to parse a response, corresponding a request sent. Defaults to 0.01.
-        timeout (int): Seconds of deadline to wait for a response. Defaults to 100.
+        batch_size (int):
+            Number of requests for a batch. Defaults to ``64``.
+            If ``DYNAMIC_BATCHER__BATCH_SIZE`` is set, the argument default value is overrided.
+            When the argument value is passed, all other settings are ignored.
+
+            Priority::
+    
+                values passed > ENVVAR > default value
+        
+
+        batch_time (int):
+            Seconds of deadline to wait for requests. Defaults to ``2``.
             If `timeout` is too large, it will be stuck on waiting too long, which is not intended.
             If `timeout` is too small, it will work as impatient, not waiting for the batch process is finished.
     
     Attributes:
-        delay (int): Seconds of frequency to parse a response, corresponding a request sent.
-        timeout (int): Seconds of deadline to wait for a response.
+        delay (int):
+            Seconds of frequency to parse a request.
+        
+        batch_size (int):
+            Number of requests for a batch.
+        
+        batch_time (int):
+            Seconds of deadline to wait for requests.
 
     Example:
         Create a batcher:
@@ -249,8 +289,8 @@ class BatchProcessor:
 
     def __init__(
             self,
-            batch_size: int = 64,
-            batch_time: int = 2,
+            batch_size: int = DYNAMIC_BATCHER__BATCH_SIZE or 64,
+            batch_time: int = DYNAMIC_BATCHER__BATCH_TIME or 2,
         ):
 
         self.delay = 0.001
@@ -273,13 +313,36 @@ class BatchProcessor:
 
         Args:
             func (:obj: `Callable`): A callable object, like function or method.
-                `func` should have only one positional argument.
-                , and its type should be `List`, to handle the argument as a scalable batch.
-                The type of the argument and the returning value should be `List`, to handle a scalable batch and operate elementwisely.
-                Also both argument and returning value should be `JSON (de)serializable`.
+                `func` should have only one positional argument, and its type should be ``List``; to handle the argument as a scalable batch.
+                The type of the argument and the returning value should be ``List``, to handle a scalable batch and operate elementwisely.
+                Also both argument and returning value should be **JSON (de)serializable**.
 
         Returns:
             None
+        
+        Example:
+
+            First, define a function to run:
+
+                >>> body_list = [
+                ...     {'values': [1, 2, 3]},
+                ...     {'values': [4, 5, 6]}
+                ... ]
+                >>> def sum_values(bodies: List[Dict]) -> List[Dict]:
+                ...     result = []
+                ...     for body in bodies:
+                ...         result.append( { 'sum': sum(body['values']) } )
+                ...     return result
+                >>> sum_values(body_list)
+            
+            Then, run a ``BatchProcessor``:
+
+                >>> import asyncio
+                >>> from dynamic_batcher import BatchProcessor
+                >>> batch_processor = BatchProcessor()
+                >>> asyncio.run(batch_processor.start_daemon(sum_values))
+            
+            
         """
         self.__log.info(
             ' '.join([

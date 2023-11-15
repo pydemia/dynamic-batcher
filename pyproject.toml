@@ -42,6 +42,7 @@ dev = [
     "wheel",
     "twine",
     "build",
+    "sphinx"
 ]
 
 [tool.pytest.ini_options]
@@ -61,3 +62,18 @@ exclude = [
 [tool.setuptools.dynamic]
 version = {attr = "dynamic_batcher.__version__"}
 readme = {file = ["README.md"]}
+
+[tool.poetry]
+name = "guidelines"
+version = "0.1.0"
+description = ""
+authors = ["Read the Docs, Inc"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+scour = "^0.38.2"
+Sphinx = "^4.5.0"
+sphinx-rtd-theme = "^1.0.0"
+
+[tool.poetry.dev-dependencies]

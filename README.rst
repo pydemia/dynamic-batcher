@@ -157,12 +157,12 @@ Test
 
 * locust: http://localhost:8089
 
-  .. image:: docs/img/locust-start.png
-     :target: docs/img/locust-start.png
+  .. image:: img/locust-start.png
+     :target: img/locust-start.png
      :alt: locust-start
 
-  .. image:: docs/img/locust-run.png
-     :target: docs/img/locust-run.png
+  .. image:: img/locust-run.png
+     :target: img/locust-run.png
      :alt: locust-run
 
 Explanation
@@ -212,6 +212,6 @@ Concept
 
 Ref.: `NVIDIA Triton's dynamic batching <https://github.com/triton-inference-server/tutorials/tree/main/Conceptual_Guide/Part_2-improving_resource_utilization#what-is-dynamic-batching>`_
 
-.. image:: docs/img/dynamic_batching-triton.png
-   :target: docs/img/dynamic_batching-triton.png
+.. image:: img/dynamic_batching-triton.png
+   :target: img/dynamic_batching-triton.png
    :alt: dynamic_batching-triton

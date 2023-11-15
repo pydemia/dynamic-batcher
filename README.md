@@ -100,8 +100,8 @@ pip install -r requirements-test.txt
     }
     ```
 * locust: http://localhost:8089
-  ![locust-start](docs/img/locust-start.png)
-  ![locust-run](docs/img/locust-run.png)
+  ![locust-start](img/locust-start.png)
+  ![locust-run](img/locust-run.png)
 
 
 ### Explanation
@@ -150,4 +150,4 @@ ref:
 * https://github.com/triton-inference-server/tutorials/tree/main/Conceptual_Guide/Part_2-improving_resource_utilization#what-is-dynamic-batching
 
 
-![dynamic_batching-triton](docs/img/dynamic_batching-triton.png)
+![dynamic_batching-triton](img/dynamic_batching-triton.png)

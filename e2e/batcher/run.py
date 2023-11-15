@@ -30,10 +30,6 @@ def add_1(bodies: List[Dict]) -> List[Dict]:
 if __name__ == '__main__':
     log = logging.getLogger()
     log.info('start test daemon')
-    batcher = DynamicBatcher()
-    batch_processor = BatchProcessor(
-        batch_size=DYNAMIC_BATCHER__BATCH_SIZE,
-        batch_time=DYNAMIC_BATCHER__BATCH_TIME,
-    )
+    batch_processor = BatchProcessor()
 
     asyncio.run(batch_processor.start_daemon(add_1))
