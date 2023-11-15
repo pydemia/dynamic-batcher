@@ -1,9 +1,9 @@
-.. dynamic_batcher documentation master file, created by
+.. dynamic-åbatcher documentation master file, created by
    sphinx-quickstart on Wed Nov 15 22:27:11 2023.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to dynamic_batcher's documentation!
+Welcome to dynamic-batcher's documentation!
 ===========================================
 
 .. toctree::

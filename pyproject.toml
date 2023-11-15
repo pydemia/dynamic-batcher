@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dynamic_batcher"
+name = "dynamic-batcher"
 authors = [
   { name="Youngju Jaden Kim", email="pydemia@gmail.com" },
 ]
@@ -23,9 +23,9 @@ dependencies = [
 dynamic = ["version", "readme"]
 
 [project.urls]
-Homepage = "https://github.com/pydemia/dynamic_batcher"
-Changelog = "https://github.com/pydemia/dynamic_batcher/CHANGELOG.md"
-"Bug Tracker" = "https://github.com/pydemia/dynamic_batcher/issues"
+Homepage = "https://github.com/pydemia/dynamic-batcher"
+Changelog = "https://github.com/pydemia/dynamic-batcher/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/pydemia/dynamic-batcher/issues"
 
 
 [project.optional-dependencies]

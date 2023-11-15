@@ -1,4 +1,4 @@
-dynamic_batcher
+dynamic-batcher
 ===============
 
 
@@ -38,7 +38,7 @@ Installation
 
 .. code-block:: bash
 
-  pip install dynamic_batcher
+  pip install dynamic-batcher
 
 Quickstart
 ----------
