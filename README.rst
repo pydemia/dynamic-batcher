@@ -173,7 +173,7 @@ when ``DYNAMIC_BATCHER__BATCH_SIZE=64`` and ``DYNAMIC_BATCHER__BATCH_TIME=2`` is
 a running ``BatchProcessor`` waits to run a batch until the amount of requests received is met(\ ``requests count=64``\ ), for the batch_time(\ ``2 seconds``\ ). If the time is up, the partial amount of requests will be processed.
 
 
-* Launch
+* Startup log
 
   .. code-block::
   

@@ -8,6 +8,7 @@ authors = [
   { name="Youngju Jaden Kim", email="pydemia@gmail.com" },
 ]
 description = "A daemon processor for gathering requests into a batch."
+long_description_content_type="text/markdown"
 requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -59,4 +60,4 @@ exclude = [
 
 [tool.setuptools.dynamic]
 version = {attr = "dynamic_batcher.__version__"}
-readme = {file = ["README.rst"]}
+readme = {file = ["README.md"]}

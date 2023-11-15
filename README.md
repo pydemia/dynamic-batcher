@@ -49,7 +49,7 @@ pip install -r requirements-test.txt
     ```
   RUN:
     ```bash
-    PYTHONPATH="$(pwd):${PYTHONPATH}" python e2e/batcher/run.py
+    python e2e/batcher/run.py
     ```
 
 * [locust](e2e/locust/)  
