@@ -3,10 +3,19 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to dynamic_batcher's documentation!
-===========================================
+Dynamic Batcher: a Flexible Batch Processing Daemon
+===================================================
 
 :Release: |release|
+
+
+Overview
+------------------
+
+``dynamic-batcher`` is a request handling tool to gather multiple requests together for batch processing.
+It is designed to handle model infereneces using GPU simultaneously, as parallel.
+
+
 
 .. toctree::
    :maxdepth: 4
