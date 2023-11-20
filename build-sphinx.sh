@@ -6,7 +6,7 @@
 sphinx-apidoc -f -o docs/source dynamic_batcher \
     --separate \
     --module-first \
-    -d 4 \
+    -d 5 \
     -H dynamic_batcher
 
 cd docs && make html
