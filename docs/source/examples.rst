@@ -1,5 +1,5 @@
 ====================================
-Examples of using ``DynamicBatcher``
+Getting Started
 ====================================
 
 :Release: |release|
