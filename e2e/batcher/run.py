@@ -12,7 +12,7 @@ logging.config.fileConfig(
     Path(__file__).parent.absolute().joinpath('logging.conf'),
 )
 
-from dynamic_batcher import DynamicBatcher, BatchProcessor
+from dynamic_batcher import BatchProcessor
 
 DYNAMIC_BATCHER__BATCH_SIZE = int(os.getenv("DYNAMIC_BATCHER__BATCH_SIZE", "64"))
 DYNAMIC_BATCHER__BATCH_TIME = int(os.getenv("DYNAMIC_BATCHER__BATCH_TIME", "2"))

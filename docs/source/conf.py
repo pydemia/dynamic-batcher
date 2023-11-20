@@ -25,6 +25,7 @@ release = 'v1.0.2'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
+    'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
@@ -35,7 +36,8 @@ extensions = [
 ]
 
 templates_path = ['_templates']
-exclude_patterns = []
+
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 source_suffix = {
     '.rst': 'restructuredtext',
@@ -43,11 +45,14 @@ source_suffix = {
     '.md': 'markdown',
 }
 
+# If true, '()' will be appended to :func: etc. cross-reference text.
+add_function_parentheses = False
+
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 # If true, the current module name will be prepended to all description

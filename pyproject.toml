@@ -23,7 +23,8 @@ dependencies = [
 dynamic = ["version", "readme"]
 
 [project.urls]
-Homepage = "https://github.com/pydemia/dynamic-batcher"
+Homepage = "https://dynamic-batcher.readthedocs.io/en/latest/"
+Repository = "https://github.com/pydemia/dynamic-batcher"
 Changelog = "https://github.com/pydemia/dynamic-batcher/CHANGELOG.md"
 "Bug Tracker" = "https://github.com/pydemia/dynamic-batcher/issues"
 
@@ -42,7 +43,8 @@ dev = [
     "wheel",
     "twine",
     "build",
-    "sphinx"
+    "sphinx",
+    "sphinx-rtd-theme",
 ]
 
 [tool.pytest.ini_options]

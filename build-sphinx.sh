@@ -3,6 +3,10 @@
 # sphinx-quickstart docs
 # sphinx-build -M html docs/source docs/build
 
-sphinx-apidoc -f -o docs/source dynamic_batcher
+sphinx-apidoc -f -o docs/source dynamic_batcher \
+    --separate \
+    --module-first \
+    -d 4 \
+    -H dynamic_batcher
 
 cd docs && make html

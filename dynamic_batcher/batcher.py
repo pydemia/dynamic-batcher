@@ -15,6 +15,7 @@ Info
 from typing import Optional, List, Dict, Callable, NamedTuple
 import os
 import json
+import logging
 import asyncio
 import redis
 from autologging import logged
@@ -71,14 +72,14 @@ class DynamicBatcher:
             Seconds of deadline to wait for a response.
 
     Example:
-        Create a batcher:
+        Create a `batcher`:
             >>> from dynamic_batcher import DynamicBatcher
             >>> batcher = DynamicBatcher()
         
         You can give some parameters:
             >>> lazy_batcher = DynamicBatcher(delay=1)
         
-        Or, create a fail-fast batcher:
+        Or, create a fail-fast `batcher`:
             >>> fail_fast_batcher = DynamicBatcher(timeout=3)
     
     Raises:
@@ -123,28 +124,37 @@ class DynamicBatcher:
         
         Example:
 
+            >>> import time
+            >>> import uvicorn
+            >>> from typing import List
             >>> from fastapi import FastAPI
             >>> from pydantic import BaseModel
             >>> from dynamic_batcher import DynamicBatcher
             >>> 
             >>> app = FastAPI()
             >>> batcher = DynamicBatcher()
-            >>> 
-            >>> class NestedKey(BaseModel):
-            >>>     key: str
-            >>>     values: List[int] = [1, 5, 2]
-            >>> 
             >>> class RequestItem(BaseModel):
-            >>>     content: str
-            >>>     nested: NestedKey
+            ...     key: str
+            ...     values: List[int] = [1, 5, 2]
             >>> 
-            >>> @app.post("/items/test/{item_id}")
-            >>> async def infer_test_item(body: RequestItem):
-            >>>     resp_body = await batcher.asend(body.model_dump())
-            >>>     result = {
-            >>>         "data": resp_body,
-            >>>     }
-            >>>     return result
+            >>> @app.post("/batch/{key}")
+            >>> async def run_batch(key: str, body: RequestItem):
+            ...     start_time = time.time()
+            ...     resp_body = await batcher.asend(body.model_dump())
+            ...     result = {
+            ...         "key": key,
+            ...         "values": body.values,
+            ...         "values_sum": resp_body,
+            ...         "elapsed": time.time() - start_time
+            ...     }
+            ...     return result
+            >>> 
+            >>> if __name__ == "__main__":
+            >>>     uvicorn.run(app)
+            INFO:     Started server process [27085]
+            INFO:     Waiting for application startup.
+            INFO:     Application startup complete.
+            INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
         """
         try:
             json_body = json.dumps(body)
@@ -273,16 +283,12 @@ class BatchProcessor:
             Seconds of deadline to wait for requests.
 
     Example:
-        Create a batcher:
-            >>> from dynamic_batcher import DynamicBatcher
-            >>> batcher = DynamicBatcher()
-        
-        You can give some parameters:
-            >>> lazy_batcher = DynamicBatcher(delay=1)
-        
-        Or, create a fail-fast batcher:
-            >>> fail_fast_batcher = DynamicBatcher(timeout=3)
-    
+        Create a `processor`:
+            >>> import asyncio
+            >>> from dynamic_batcher import BatchProcessor
+            >>> processor = BatchProcessor()
+            >>> asyncio.run(batch_processor.start_daemon(lambda x: x))
+
     Raises:
         redis.exceptions.ConnectionError: a redis server is not available.
     """
@@ -293,6 +299,10 @@ class BatchProcessor:
             batch_time: int = DYNAMIC_BATCHER__BATCH_TIME or 2,
         ):
 
+        if self.__log:
+            self.log = self.__log
+        else:
+            self.log = logging.getLogger(self.__class__.__qualname__)
         self.delay = 0.001
         self.batch_size = batch_size
         self.batch_time = batch_time
@@ -307,6 +317,7 @@ class BatchProcessor:
         self._processor_group = REDIS__STREAM_GROUP_PROCESSOR
         self._batcher_group = REDIS__STREAM_GROUP_BATCHER
 
+        self.response_expiration_sec = 600
     async def start_daemon(self, func: Callable) -> None:
         """Start a single batch process as a daemon.
         This will concatenate given requests to one batch, call `func`, and split into corresponding responses.
@@ -324,6 +335,9 @@ class BatchProcessor:
 
             First, define a function to run:
 
+                >>> import asyncio
+                >>> from dynamic_batcher import BatchProcessor
+                >>> from typing import List, Dict
                 >>> body_list = [
                 ...     {'values': [1, 2, 3]},
                 ...     {'values': [4, 5, 6]}
@@ -333,7 +347,9 @@ class BatchProcessor:
                 ...     for body in bodies:
                 ...         result.append( { 'sum': sum(body['values']) } )
                 ...     return result
+                    
                 >>> sum_values(body_list)
+                [{'sum': 6}, {'sum': 15}]
             
             Then, run a ``BatchProcessor``:
 
@@ -344,7 +360,7 @@ class BatchProcessor:
             
             
         """
-        self.__log.info(
+        self.log.info(
             ' '.join([
                 'BatchProcessor start:',
                 f'delay={self.delay},',
@@ -354,6 +370,7 @@ class BatchProcessor:
         )
         while True:
             await self._run(func)
+            await self._trim()
 
 
     async def _run(self, func: Callable) -> None:
@@ -374,7 +391,7 @@ class BatchProcessor:
             await asyncio.sleep(self.delay)
 
         if requests:
-            self.__log.debug(
+            self.log.debug(
                 f'batch start: {delay_period:.3f}/{self.batch_time}, {batch_gathered}/{self.batch_size}'
             )
             streams = [v[0] for i, v in requests]
@@ -385,14 +402,18 @@ class BatchProcessor:
             try:
                 results = func(stream_bodies)
             except Exception as e:
-                self.__log.error(f'Error while running `{func.__name__}`: {e}')
+                self.log.error(f'Error while running `{func.__name__}`: {e}')
 
             await self._mark_as_finished_as_record(stream_ids, results)
 
 
     async def _mark_as_finished_as_record(self, stream_ids: List[str], results: List[Dict]) -> None:
         for stream_id, stream_body in zip(stream_ids, results):
-            self._redis_client.set(stream_id, json.dumps(stream_body))
+            self._redis_client.set(
+                stream_id,
+                json.dumps(stream_body),
+                ex=self.response_expiration_sec,
+            )
 
         self._redis_client.xdel(self._request_key, *stream_ids)
 
@@ -425,4 +446,23 @@ class BatchProcessor:
                 return
 
         except Exception as e:
-            self.__log.error(f'Error while reading message {e}')
+            self.log.error(f'Error while reading message {e}')
+
+    async def _trim(self) -> None:
+        try:
+            remaining_msg_cnt = self.batch_size * 10
+            request_trimmed_cnt: int = self._redis_client.xtrim(
+                self._request_key,
+                maxlen=remaining_msg_cnt,
+            )
+            self.log.debug(f'Trimmed old requests: {request_trimmed_cnt}')
+
+            response_trimmed_cnt: int = self._redis_client.xtrim(
+                self._response_key,
+                maxlen=remaining_msg_cnt,
+            )
+            self.log.debug(f'Trimmed old responses: {response_trimmed_cnt}')
+
+        except Exception as e:
+            self.log.error(f'Error while trimming message {e}'
+            )
