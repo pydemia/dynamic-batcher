@@ -6,17 +6,21 @@
 Welcome to dynamic_batcher's documentation!
 ===========================================
 
+:Release: |release|
+
 .. toctree::
-   :maxdepth: 5
-   :caption: Contents
+   :maxdepth: 2
+   :caption: How-to Guide
+
+   examples
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Modules
 
    dynamic_batcher
 
-.. toctree::
-   :maxdepth: 5
-   :caption: Examples
-
-   examples
 
 Indices and tables
 ==================

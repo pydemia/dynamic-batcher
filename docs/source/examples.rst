@@ -1,5 +1,5 @@
 ====================================
-Examples of using ``DynamicBatcher``
+Tutorial: ``DynamicBatcher``
 ====================================
 
 :Release: |release|
@@ -7,4 +7,4 @@ Examples of using ``DynamicBatcher``
 .. toctree::
    :maxdepth: 5
 
-   examples-quickstart
+   examples-getting_started

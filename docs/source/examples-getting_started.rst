@@ -1,5 +1,5 @@
 ====================================
-Quickstart
+Getting Started
 ====================================
 
 :Release: |release|
@@ -14,7 +14,7 @@ Gathering API requests as one batch
 
 First, run a redis server:
 
-::
+.. code-block:: bash
 
     $ docker run --rm -p 6379:6379 -e ALLOW_EMPTY_PASSWORD=yes bitnami/redis:latest
     redis 00:02:54.05 
@@ -73,7 +73,7 @@ Create an app with ``DynamicBatcher``:
     if __name__ == "__main__":
         uvicorn.run(app)
 
-::
+.. code-block:: console
 
     INFO:     Started server process [27085]
     INFO:     Waiting for application startup.
@@ -82,6 +82,10 @@ Create an app with ``DynamicBatcher``:
 
 
 Create a ``BatchProcessor``:
+
+.. note::
+
+    ``BatchProcessor`` should run with single process, as designed so.
 
 ::
 
@@ -109,7 +113,7 @@ Create a ``BatchProcessor``:
 
 Create a request:
 
-::
+.. code-block:: bash
 
     $ curl -X POST localhost:8000/batch/single \
         -H 'Content-Type: application/json' \
@@ -118,7 +122,7 @@ Create a request:
 
 Create requests simultaneously:
 
-::
+.. code-block:: bash
 
     $ seq 1 17 | xargs -n1 -I {} -P20 curl -w "\n" -X POST localhost:8000/batch/{} \
         -H 'Content-Type: application/json' \
