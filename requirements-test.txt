@@ -10,3 +10,4 @@ twine
 esbonio
 keyring
 keyrings.alt
+sphinx-rtd-theme
