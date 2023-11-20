@@ -7,4 +7,4 @@ Getting Started
 .. toctree::
    :maxdepth: 5
 
-   examples-quickstart
+   examples-getting_started
