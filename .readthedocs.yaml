@@ -2,39 +2,39 @@
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
 # Required
-version: 2
+# version: 2
 
 # Set the version of Python and other tools you might need
-build:
-  os: ubuntu-22.04
-  tools:
-    python: "3.10"
+# build:
+#   os: ubuntu-22.04
+#   tools:
+#     python: "3.10"
 
 # mkdocs:
 #   configuration: mkdocs.yml
 
 # Optionally declare the Python requirements required to build your docs
-python:
-  install:
-  # - requirements: docs/requirements.txt
-    - method: pip
-      path: .
-      extra_requirements:
-        - pyproject.toml
-        # - docs
+# python:
+#   install:
+#   # - requirements: docs/requirements.txt
+#     - method: pip
+#       path: .
+#       extra_requirements:
+#         - pyproject.toml
+#         # - docs
 
 
 # # Read the Docs configuration file for Sphinx projects
 # # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
 # # Required
-# version: 2
+version: 2
 
 # # Set the OS, Python version and other tools you might need
-# build:
-#   os: ubuntu-22.04
-#   tools:
-#     python: "3.12"
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.10"
 #     # You can also specify other tool versions:
 #     # nodejs: "20"
 #     # rust: "1.70"
@@ -56,6 +56,11 @@ sphinx:
 # # Optional but recommended, declare the Python requirements required
 # # to build your documentation
 # # See https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
-# # python:
-# #   install:
-# #     - requirements: docs/requirements.txt
+python:
+  install:
+  # - requirements: docs/requirements.txt
+    - method: pip
+      path: .
+      extra_requirements:
+        - pyproject.toml
+        - dev
