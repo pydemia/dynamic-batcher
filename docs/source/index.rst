@@ -9,14 +9,14 @@ Welcome to dynamic_batcher's documentation!
 :Release: |release|
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: How-to Guide
 
    examples
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Modules
 
    dynamic_batcher
