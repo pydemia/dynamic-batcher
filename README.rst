@@ -112,11 +112,11 @@ Test
 
 
 * swagger: http://localhost:8000
-    - POST ``/items/test/{item_id}``
+    - POST ``/items/batch/{item_id}``
 
         .. code-block:: bash
 
-          curl -X POST http://localhost:8000/items/test/1 \
+          curl -X POST http://localhost:8000/items/batch/1 \
           -H 'Content-Type: application/json' \
           -d '{
             "content": "string",
@@ -144,7 +144,7 @@ Test
                   5,
                   2
                 ],
-                "values_add1": [
+                "result": [
                   2,
                   6,
                   3

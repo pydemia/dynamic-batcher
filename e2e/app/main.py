@@ -90,8 +90,9 @@ async def infer_item(
     return result
 
 
-@app.post("/items/test/{item_id}")
+@app.post("/items/batch/{item_id}")
 async def infer_test_item(
+        item_id: str,
         body: RequestItem,
         delay: Optional[int] = None,
         batcher: DynamicBatcher = Depends(get_dynamic_batcher),
@@ -103,6 +104,8 @@ async def infer_test_item(
 
     resp_body = await batcher.asend(body.model_dump())
     result = {
+        "item_id": item_id,
+        "values": body.nested.values,
         "data": resp_body,
         "elapsed_time": time.time() - start_t,
     }
