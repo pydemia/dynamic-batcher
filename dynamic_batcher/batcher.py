@@ -403,11 +403,12 @@ class BatchProcessor:
                 results = func(stream_bodies)
             except Exception as e:
                 self.log.error(f'Error while running `{func.__name__}`: {e}')
+                results = None
 
             await self._mark_as_finished_as_record(stream_ids, results)
 
 
-    async def _mark_as_finished_as_record(self, stream_ids: List[str], results: List[Dict]) -> None:
+    async def _mark_as_finished_as_record(self, stream_ids: List[str], results: Optional[List[Dict]]) -> None:
         for stream_id, stream_body in zip(stream_ids, results):
             self._redis_client.set(
                 stream_id,
@@ -418,7 +419,9 @@ class BatchProcessor:
         self._redis_client.xdel(self._request_key, *stream_ids)
 
 
-    async def _mark_as_finished_as_stream(self, stream_ids: List[str], results: List[Dict]) -> None:
+    async def _mark_as_finished_as_stream(self, stream_ids: List[str], results: Optional[List[Dict]]) -> None:
+        if results is None:
+            results = [None for i in stream_ids]
         for stream_id, stream_body in zip(stream_ids, results):
             self._redis_client.xadd(
                 self._response_key,
