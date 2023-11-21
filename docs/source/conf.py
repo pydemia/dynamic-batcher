@@ -17,7 +17,7 @@ sys.path.insert(0, Path(__file__).parents[2].resolve().as_posix())
 project = 'dynamic-batcher'
 copyright = '2023, pydemia'
 author = 'pydemia'
-release = 'v1.0.3'
+release = 'v1.0.4'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
