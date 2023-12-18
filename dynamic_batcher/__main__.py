@@ -11,7 +11,7 @@ Info
     You can only focus on using `DynamicBatcher` with this command.
 
 Args
-=========
+----
 
     callable (str):
         Callable name to execute. ex.: 'module.submodule.func'
@@ -30,7 +30,7 @@ Args
 
 
 Example
-=======
+-------
 
     .. code-block:: python
 
@@ -85,6 +85,13 @@ argparser.add_argument(
 )
 
 argparser.add_argument(
+    "-lv", "--log-level",
+    help="Log Level",
+    type=str,
+    default="INFO",
+    required=False,
+)
+argparser.add_argument(
     "-lf", "--log-config-file",
     help="Log Config file path",
     type=str,
@@ -106,6 +113,7 @@ if __name__ == '__main__':
     batch_callable = validate_callable(-1)(args.callable)
 
     logger = Logger(
+        level=args.log_level,
         log_config_file=args.log_config_file,
         log_config_json=args.log_config_json,
     )

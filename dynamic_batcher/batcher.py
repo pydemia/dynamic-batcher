@@ -248,7 +248,7 @@ class DynamicBatcher:
         else:
             return
 
-@logged
+
 class BatchProcessor:
     """A Client class for dynamic batch processing.
     A `BatchProcessor` tries to connect a redis server with connection info., given by the following ``ENVVAR``:
@@ -306,11 +306,9 @@ class BatchProcessor:
             batch_time: int = DYNAMIC_BATCHER__BATCH_TIME or 2,
         ):
 
-        self.log = self.__log or logging.getLogger(self.__class__.__qualname__)
-        # if self.__log:
-        #     self.log = self.__log
-        # else:
-        #     self.log = logging.getLogger(self.__class__.__qualname__)
+        # self.log = self.__log or logging.getLogger(self.__class__.__qualname__)
+        self.log = logging.getLogger(logger.LOGGERNAME_BATCHPROCESSOR)
+        self.log.info("LOG_LEVEL: %s", logging.getLevelName(self.log.level))
         self.delay = 0.001
         self.batch_size = batch_size
         self.batch_time = batch_time

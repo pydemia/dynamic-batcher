@@ -89,11 +89,9 @@ Create a ``BatchProcessor``:
 
 ::
 
-    # process.py
+    # batch_func.py
 
-    ## process_fn
-    import asyncio
-    from dynamic_batcher import BatchProcessor
+    ## function_for_batch: `sum_values`
     from typing import List, Dict
     body_list = [
         {'values': [1, 2, 3]},
@@ -107,8 +105,9 @@ Create a ``BatchProcessor``:
 
     # sum_values(body_list) -> [{'sum': 6}, {'sum': 15}]
 
-    batch_processor = BatchProcessor(batch_size=5, batch_time=2)
-    asyncio.run(batch_processor.start_daemon(sum_values))
+.. code-block:: bash
+
+    $ python -m dynamic_batcher batch_func.sum_values --batch-size=64 --batch-time=2
 
 
 Create a request:

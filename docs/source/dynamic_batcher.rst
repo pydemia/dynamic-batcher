@@ -13,5 +13,7 @@ Submodules
    :maxdepth: 5
 
    dynamic_batcher.batcher
+   dynamic_batcher.logger
    dynamic_batcher.redis_engine
    dynamic_batcher.types
+   dynamic_batcher.validate

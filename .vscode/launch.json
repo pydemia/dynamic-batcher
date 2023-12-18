@@ -80,6 +80,9 @@
             // "program": "run.py",
             "args": [
               "batcher.run.add_1",
+              "--batch-size=64",
+              "--batch-time=2",
+              "--log-level=DEBUG"
               // "--log-config-file=batcher/logging.conf"
               ],
               "env": {

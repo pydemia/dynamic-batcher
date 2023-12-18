@@ -97,7 +97,7 @@ Run
 
       .. code-block:: bash
 
-        python e2e/batcher/run.py
+        python -m dynamic_batcher e2e.batcher.run.add_1 --batch-size=64 --batch-time=2
 
 * `locust <e2e/locust/>`_
     - RUN:

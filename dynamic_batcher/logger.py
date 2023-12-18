@@ -7,6 +7,12 @@ import os
 import sys
 import json
 
+
+__all__ = [
+    "LOGGERNAME_BATCHPROCESSOR",
+    "Logger",
+]
+
 # # syslog facility codes
 # SYSLOG_FACILITIES = {
 #     "auth": 4,
@@ -32,45 +38,58 @@ import json
 #     "local7": 23
 # }
 
-CONFIG_DEFAULTS = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "root": {"level": "INFO", "handlers": ["console"]},
-    "loggers": {
-        "batch_processor.error": {
-            "level": "INFO",
-            "handlers": ["error_console"],
-            "propagate": True,
-            "qualname": "batch_processor.error"
-        },
 
-        "batch_processor.access": {
-            "level": "INFO",
-            "handlers": ["console"],
-            "propagate": True,
-            "qualname": "batch_processor.access"
-        }
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "generic",
-            "stream": "ext://sys.stdout"
+def get_config_defaults(level: str = "info") -> Dict:
+
+    CONFIG_DEFAULTS = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        # "root": {"level": level, "handlers": ["console"]},
+        "loggers": {
+            "batch_processor": {
+                "level": level,
+                "handlers": ["console"],
+                "propagate": True,
+                "qualname": "batch_processor"
+            },
+            "batch_processor.error": {
+                "level": level,
+                "handlers": ["error_console"],
+                "propagate": True,
+                "qualname": "batch_processor.error"
+            },
+
+            "batch_processor.access": {
+                "level": level,
+                "handlers": ["console"],
+                "propagate": True,
+                "qualname": "batch_processor.access"
+            }
         },
-        "error_console": {
-            "class": "logging.StreamHandler",
-            "formatter": "generic",
-            "stream": "ext://sys.stderr"
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": "generic",
+                "stream": "ext://sys.stdout"
+            },
+            "error_console": {
+                "class": "logging.StreamHandler",
+                "formatter": "generic",
+                "stream": "ext://sys.stderr"
+            },
         },
-    },
-    "formatters": {
-        "generic": {
-            "format": "%(asctime)s [%(process)d] [%(levelname)s] %(message)s",
-            "datefmt": "[%Y-%m-%d %H:%M:%S %z]",
-            "class": "logging.Formatter"
+        "formatters": {
+            "generic": {
+                "format": "%(asctime)s [%(process)d] [%(levelname)s] %(message)s",
+                "datefmt": "[%Y-%m-%d %H:%M:%S %z]",
+                "class": "logging.Formatter"
+            }
         }
     }
-}
+    return CONFIG_DEFAULTS
+
+
+LOGGERNAME_BATCHPROCESSOR = "batch_processor"
 
 
 class Logger:
@@ -94,21 +113,35 @@ class Logger:
             log_config_json: Optional[str] = None,
             log_config_dict: Optional[Dict] = None,
         ) -> None:
-        self.error_log = logging.getLogger("batch_processor.error")
-        self.error_log.propagate = False
-        self.error_handlers = []
-
-        self.access_log = logging.getLogger("batch_processor.access")
-        self.access_log.propagate = False
-        self.access_handlers = []
-
-        self.logfile = None
-        self.lock = threading.Lock()
-
 
         self.loglevel = self.LOG_LEVELS.get(level.lower(), logging.INFO)
-        self.error_log.setLevel(self.loglevel)
-        self.access_log.setLevel(self.loglevel)
+
+        # self.error_log = logging.getLogger("batch_processor.error")
+        # self.error_log.propagate = False
+        # self.error_handlers = []
+
+        # self.access_log = logging.getLogger("batch_processor.access")
+        # self.access_log.propagate = False
+        # self.access_handlers = []
+
+        # self.logfile = None
+        # self.lock = threading.Lock()
+
+
+        # self.loglevel = self.LOG_LEVELS.get(level.lower(), logging.INFO)
+        # self.error_log.setLevel(self.loglevel)
+        # self.access_log.setLevel(self.loglevel)
+
+        # self.batchprocessor_log = logging.getLogger("batch_processor")
+        # self.batchprocessor_log.propagate = False
+        # self.batchprocessor_log_handlers = []
+
+        # self.logfile = None
+        # self.lock = threading.Lock()
+
+        # self.loglevel = self.LOG_LEVELS.get(level.lower(), logging.INFO)
+        # self.batchprocessor_log.setLevel(self.loglevel)
+
 
         # # set gunicorn.error handler
         # if self.cfg.capture_output and cfg.errorlog != "-":
@@ -141,7 +174,7 @@ class Logger:
 
         if log_config_file:
             if os.path.exists(log_config_file):
-                defaults = CONFIG_DEFAULTS.copy()
+                defaults = get_config_defaults(level=self.loglevel).copy()
                 defaults["__file__"] = log_config_file
                 defaults["here"] = os.path.dirname(log_config_file)
                 fileConfig(
@@ -156,11 +189,11 @@ class Logger:
         elif log_config_dict:
             self._set_log_config_dict(log_config_dict)
         else:
-            dictConfig(CONFIG_DEFAULTS)
+            dictConfig(get_config_defaults(level=self.loglevel))
             # raise RuntimeError("No log configuration provided: 'log_config_file' or 'log_config_dict' is needed.")
 
     def _set_log_config_dict(self, log_config_dict: Dict) -> None:
-        config = CONFIG_DEFAULTS.copy()
+        config = get_config_defaults(level=self.loglevel).copy()
         config.update(log_config_dict)
         try:
             dictConfig(config)
