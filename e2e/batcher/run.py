@@ -7,9 +7,9 @@ import logging.config
 from pathlib import Path
 
 
-logging.config.fileConfig(
-    Path(__file__).parent.absolute().joinpath('logging.conf'),
-)
+# logging.config.fileConfig(
+#     Path(__file__).parent.absolute().joinpath('logging.conf'),
+# )
 
 from dynamic_batcher import BatchProcessor
 
@@ -26,7 +26,7 @@ def add_1(bodies: List[Dict]) -> List[Dict]:
 
 
 if __name__ == '__main__':
-    log = logging.getLogger()
+    # log = logging.getLogger()
     batch_processor = BatchProcessor()
 
     asyncio.run(batch_processor.start_daemon(add_1))

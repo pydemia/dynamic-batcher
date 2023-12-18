@@ -25,6 +25,6 @@ __all__ = [
 __version__ = "1.0.4"
 
 
-logging.basicConfig(
-    stream=sys.stdout,
-)
+# logging.basicConfig(
+#     stream=sys.stdout,
+# )

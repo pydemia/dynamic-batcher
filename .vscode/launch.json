@@ -71,6 +71,25 @@
               "console": "internalConsole",
               "envFile": "${workspaceFolder}/e2e/batcher/.env",
               "justMyCode": true,
+        },
+        {
+            "name": "Run: BatchProcessor test",
+            "type": "python",
+            "request": "launch",
+            "module": "dynamic_batcher",
+            // "program": "run.py",
+            "args": [
+              "batcher.run.add_1",
+              // "--log-config-file=batcher/logging.conf"
+              ],
+              "env": {
+                "PYTHONPATH": "${workspaceFolder}:${env:PYTHONPATH}"
+              },
+              // "cwd": "${workspaceFolder}/e2e",
+              "cwd": "${workspaceFolder}/e2e",
+              "console": "internalConsole",
+              "envFile": "${workspaceFolder}/e2e/batcher/.env",
+              "justMyCode": true,
         }
     ]
 }
