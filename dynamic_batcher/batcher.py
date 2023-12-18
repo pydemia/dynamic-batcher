@@ -19,6 +19,7 @@ import logging
 import asyncio
 import redis
 from autologging import logged
+from . import logger
 
 from .redis_engine import (
     REDIS__HOST,
@@ -42,6 +43,10 @@ __all__ = [
 
 DYNAMIC_BATCHER__BATCH_SIZE = int(os.getenv("DYNAMIC_BATCHER__BATCH_SIZE", "64"))
 DYNAMIC_BATCHER__BATCH_TIME = int(os.getenv("DYNAMIC_BATCHER__BATCH_TIME", "2"))
+
+
+# logging.config.dictConfig(CONFIG_DEFAULTS)
+# logger.Logger(level="DEBUG")
 
 
 @logged
@@ -97,6 +102,8 @@ class DynamicBatcher:
             delay: int = 0.01,
             timeout: int = 100,
         ):
+        self.log = self.__log or logging.getLogger(self.__class__.__qualname__)
+
         self._redis_client = get_client(
             host=REDIS__HOST,
             port=REDIS__PORT,
@@ -159,7 +166,7 @@ class DynamicBatcher:
         try:
             json_body = json.dumps(body)
         except json.JSONDecodeError as json_e:
-            self.__log.error(f"cannot serialize request body: {json_e}\n{json_e.with_traceback}")
+            self.log.error(f"cannot serialize request body: {json_e}\n{json_e.with_traceback}")
             return
         try:
             requested_stream_id: bytes = self._redis_client.xadd(self._request_key, {"body": json_body})
@@ -167,13 +174,13 @@ class DynamicBatcher:
             r = await self._wait_for_finish(requested_stream_id, delay=self.delay, timeout=self.timeout)
             return r.body
         except redis.RedisError as redis_e:
-            self.__log.error(f"redis not available: {redis_e}\n{redis_e.with_traceback}")
+            self.log.error(f"redis not available: {redis_e}\n{redis_e.with_traceback}")
             return
         except json.JSONDecodeError as json_e:
-            self.__log.error(f"cannot de-serialize response body: {json_e}\n{json_e.with_traceback}")
+            self.log.error(f"cannot de-serialize response body: {json_e}\n{json_e.with_traceback}")
             return
         except Exception as unknown_e:
-            self.__log.error(f"failed to respond (unknown): {unknown_e}")
+            self.log.error(f"failed to respond (unknown): {unknown_e}")
             return
 
 
@@ -299,10 +306,11 @@ class BatchProcessor:
             batch_time: int = DYNAMIC_BATCHER__BATCH_TIME or 2,
         ):
 
-        if self.__log:
-            self.log = self.__log
-        else:
-            self.log = logging.getLogger(self.__class__.__qualname__)
+        self.log = self.__log or logging.getLogger(self.__class__.__qualname__)
+        # if self.__log:
+        #     self.log = self.__log
+        # else:
+        #     self.log = logging.getLogger(self.__class__.__qualname__)
         self.delay = 0.001
         self.batch_size = batch_size
         self.batch_time = batch_time
