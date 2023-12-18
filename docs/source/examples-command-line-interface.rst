@@ -1,6 +1,6 @@
-====================================
-Quickstart
-====================================
+=================================================
+Command-line Interface
+=================================================
 
 :Release: |release|
 
@@ -11,6 +11,11 @@ Command-line Interface to launch `BatchProcessor`
 
 We provide the command-line interface to launch `BatchProcessor` easily.
 You can only focus on using `DynamicBatcher` with this command.
+
+
+    .. code-block:: bash
+
+        $ python -m dynamic_batcher 'callable' --batch-size=64 --batch-time=2 --log-level=INFO
 
 
 Args
@@ -41,6 +46,7 @@ Example
     .. code-block:: python
 
         # example.py
+        from typing import List, Dict
         def add_1(bodies: List[Dict]) -> List[Dict]:
             for body in bodies:
                 int_list = body['nested']['values']
@@ -50,10 +56,18 @@ Example
 
     .. code-block:: bash
 
+        $ ls  # The module `example.py` can be imported.
+        example.py
         $ python -m dynamic_batcher 'example.add_1' --batch-size=64 --batch-time=2
-        [2023-12-18 16:35:46 +0900] [74985] [INFO] BatchProcessor start: delay=0.001, batch_size=64 batch_time=2
+        [2023-12-18 18:47:02 +0900] [88396] [INFO] LOG_LEVEL: INFO
+        [2023-12-18 18:47:02 +0900] [88396] [INFO] BatchProcessor start: delay=0.001, batch_size=64 batch_time=2
 
     .. code-block:: bash
 
+        $ ls  # The module `example.py` can be imported.
+        example.py
         $ python -m dynamic_batcher 'example.add_1' --log-level=DEBUG --batch-size=64 --batch-time=2
-        [2023-12-18 16:35:46 +0900] [74985] [INFO] BatchProcessor start: delay=0.001, batch_size=64 batch_time=2
+        [2023-12-18 18:47:02 +0900] [88396] [INFO] LOG_LEVEL: DEBUG
+        [2023-12-18 18:47:02 +0900] [88396] [INFO] BatchProcessor start: delay=0.001, batch_size=64 batch_time=2
+        [2023-12-18 18:47:09 +0900] [88396] [DEBUG] Trimmed old requests: 0
+        [2023-12-18 18:47:09 +0900] [88396] [DEBUG] Trimmed old responses: 0

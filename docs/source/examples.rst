@@ -8,3 +8,4 @@ Getting Started
    :maxdepth: 5
 
    examples-quickstart
+   examples-command-line-interface

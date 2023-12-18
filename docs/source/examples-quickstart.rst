@@ -4,10 +4,13 @@ Quickstart
 
 :Release: |release|
 
+.. toctree::
+   :maxdepth: 3
 
-* :ref:`gathering-api-requests-as-one-batch`
 
-.. _gathering-api-requests-as-one-batch:
+.. * :ref:`gathering-api-requests-as-one-batch`
+
+.. .. _gathering-api-requests-as-one-batch:
 
 Gathering API requests as one batch
 ====================================
