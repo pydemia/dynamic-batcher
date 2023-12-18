@@ -306,7 +306,6 @@ class BatchProcessor:
             batch_time: int = DYNAMIC_BATCHER__BATCH_TIME or 2,
         ):
 
-        # self.log = self.__log or logging.getLogger(self.__class__.__qualname__)
         self.log = logging.getLogger(logger.LOGGERNAME_BATCHPROCESSOR)
         self.log.info("LOG_LEVEL: %s", logging.getLevelName(self.log.level))
         self.delay = 0.001
@@ -384,7 +383,7 @@ class BatchProcessor:
         batch_gathered = 0
         requests = []
         while delay_period < self.batch_time and batch_gathered < self.batch_size:
-            # self.__log.debug(
+            # self.log.debug(
             #     f'alive: {delay_period:.3f}/{self.batch_time}, {batch_gathered}/{self.batch_size}'
             # )
             new_request = await self._get_next_request()
