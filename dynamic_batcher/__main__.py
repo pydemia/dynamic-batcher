@@ -15,12 +15,13 @@ Args
 
     callable (str):
         Callable name to execute. ex.: 'module.submodule.func'
+        The callable should have has only one positional argument that typed 'List'.
     
     -bs/--batch-size (int):
-        Batch size of BatchProcessor. Defaults to ``64``.
+        Batch size of BatchProcessor. if it is not provided, use envvar ``DYNAMIC_BATCHER__BATCH_SIZE`` instead. Defaults to ``64``.
     
     -bt/--batch-time (int):
-        Batch time delay(seconds) of BatchProcessor. Defaults to ``2``.
+        Batch time delay(seconds) of BatchProcessor. if it is not provided, use envvar ``DYNAMIC_BATCHER__BATCH_TIME`` instead. Defaults to ``2``.
     
     -lf/--log-config-file (str):
         Log Config file path. Optional.

@@ -113,7 +113,7 @@ a running `BatchProcessor` waits to run a batch until the amount of requests rec
 
 ```log
 start test daemon
-BatchProcessor start: delay=0.001, batch_size=64 batch_time=2
+BatchProcessor start: delay=0.001, batch_size=64, batch_time=2
 ```
 
 * Single request(concurrency=1)

@@ -366,9 +366,9 @@ class BatchProcessor:
             
         """
         self.log.info(
-            ' '.join([
-                'BatchProcessor start:',
-                f'delay={self.delay},',
+            'BatchProcessor start: ' +
+            ', '.join([
+                f'delay={self.delay}',
                 f'batch_size={self.batch_size}',
                 f'batch_time={self.batch_time}',
             ])

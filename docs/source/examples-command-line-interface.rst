@@ -23,6 +23,7 @@ Args
 
     callable (str):
         Callable name to execute. ex.: 'module.submodule.func'
+        The callable should have has only one positional argument that typed 'List'.
     
     -bs/--batch-size (int):
         Batch size of BatchProcessor. Defaults to ``64``.
@@ -60,7 +61,7 @@ Example
         example.py
         $ dynamic_batch_processor 'example.add_1' --batch-size=64 --batch-time=2
         [2023-12-18 18:47:02 +0900] [88396] [INFO] LOG_LEVEL: INFO
-        [2023-12-18 18:47:02 +0900] [88396] [INFO] BatchProcessor start: delay=0.001, batch_size=64 batch_time=2
+        [2023-12-18 18:47:02 +0900] [88396] [INFO] BatchProcessor start: delay=0.001, batch_size=64, batch_time=2
 
     .. code-block:: bash
 
@@ -68,6 +69,6 @@ Example
         example.py
         $ dynamic_batch_processor 'example.add_1' --log-level=DEBUG --batch-size=64 --batch-time=2
         [2023-12-18 18:47:02 +0900] [88396] [INFO] LOG_LEVEL: DEBUG
-        [2023-12-18 18:47:02 +0900] [88396] [INFO] BatchProcessor start: delay=0.001, batch_size=64 batch_time=2
+        [2023-12-18 18:47:02 +0900] [88396] [INFO] BatchProcessor start: delay=0.001, batch_size=64, batch_time=2
         [2023-12-18 18:47:09 +0900] [88396] [DEBUG] Trimmed old requests: 0
         [2023-12-18 18:47:09 +0900] [88396] [DEBUG] Trimmed old responses: 0
