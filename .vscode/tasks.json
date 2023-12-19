@@ -2,53 +2,6 @@
 	"version": "2.0.0",
 	"tasks": [
         {
-            "label": "llm-launch",
-            "type": "docker-run",
-            "dependsOrder": "sequence",
-            "dependsOn": [
-                "llm-shutdown",
-                "redis-restart",
-            ],
-            "dockerRun": {
-                "customOptions": "--platform=linux/amd64",
-                "network": "host",
-                "containerName": "llm",
-                "image": "codevai.azurecr.io/apps/corus-private-llm:latest",
-                "entrypoint": "/bin/bash",
-                "command": "-c 'python batch_processor.py & gunicorn app:app --workers=1 -k uvicorn.workers.UvicornWorker --preload --timeout=10 -b 0.0.0.0:8000'",
-                "env": {
-                    "REDIS__HOST": "127.0.0.1",
-                    "REDIS__PORT": "6379",
-                    "LOAD_8BIT": "false",
-                    "TERM": "256color",
-                    "MODEL_NAME": "models/deepseek-1_3b",
-                },
-                "ports": [
-                    {
-                        "containerPort": 8000,
-                        "hostPort": 8000
-                    }
-                ],
-                "remove": true
-            }
-        },
-        {
-            "label": "llm-shutdown",
-            "type": "shell",
-            "command": "docker container stop llm || true",
-            "presentation": {
-                "echo": true,
-                "reveal": "silent",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true,
-                "revealProblems": "onProblem",
-                "close": false
-            },
-            "problemMatcher": []
-        },
-        {
             "label": "redis-launch",
             "type": "docker-run",
             "dockerRun": {

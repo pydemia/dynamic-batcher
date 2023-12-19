@@ -79,3 +79,6 @@ Sphinx = "^4.5.0"
 sphinx-rtd-theme = "^1.0.0"
 
 [tool.poetry.dev-dependencies]
+
+[project.scripts]
+dynamic_batch_processor = "dynamic_batcher.__main__:run_batch_processor"

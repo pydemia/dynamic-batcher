@@ -15,7 +15,7 @@ You can only focus on using `DynamicBatcher` with this command.
 
     .. code-block:: bash
 
-        $ python -m dynamic_batcher 'callable' --batch-size=64 --batch-time=2 --log-level=INFO
+        $ dynamic_batch_processor 'module.submodule.callable' --batch-size=64 --batch-time=2 --log-level=INFO
 
 
 Args
@@ -58,7 +58,7 @@ Example
 
         $ ls  # The module `example.py` can be imported.
         example.py
-        $ python -m dynamic_batcher 'example.add_1' --batch-size=64 --batch-time=2
+        $ dynamic_batch_processor 'example.add_1' --batch-size=64 --batch-time=2
         [2023-12-18 18:47:02 +0900] [88396] [INFO] LOG_LEVEL: INFO
         [2023-12-18 18:47:02 +0900] [88396] [INFO] BatchProcessor start: delay=0.001, batch_size=64 batch_time=2
 
@@ -66,7 +66,7 @@ Example
 
         $ ls  # The module `example.py` can be imported.
         example.py
-        $ python -m dynamic_batcher 'example.add_1' --log-level=DEBUG --batch-size=64 --batch-time=2
+        $ dynamic_batch_processor 'example.add_1' --log-level=DEBUG --batch-size=64 --batch-time=2
         [2023-12-18 18:47:02 +0900] [88396] [INFO] LOG_LEVEL: DEBUG
         [2023-12-18 18:47:02 +0900] [88396] [INFO] BatchProcessor start: delay=0.001, batch_size=64 batch_time=2
         [2023-12-18 18:47:09 +0900] [88396] [DEBUG] Trimmed old requests: 0

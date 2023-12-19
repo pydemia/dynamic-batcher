@@ -44,7 +44,7 @@ Example
 
     .. code-block:: bash
 
-        $ python -m dynamic_batcher 'example.add_1' --batch-size=64 --batch-time=2 --log-config-file=logging.conf
+        $ dynamic_batch_processor 'example.add_1' --batch-size=64 --batch-time=2 --log-config-file=logging.conf
 
 """
 
@@ -107,7 +107,7 @@ argparser.add_argument(
 )
 
 
-if __name__ == '__main__':
+def run_batch_processor():
     args, _ = argparser.parse_known_args()
 
     batch_callable = validate_callable(-1)(args.callable)
@@ -123,3 +123,8 @@ if __name__ == '__main__':
         batch_time=args.batch_time,
     )
     asyncio.run(batch_processor.start_daemon(batch_callable))
+
+
+
+if __name__ == '__main__':
+    run_batch_processor()
