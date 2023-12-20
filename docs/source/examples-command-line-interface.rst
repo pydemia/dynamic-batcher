@@ -6,11 +6,11 @@ Command-line Interface
 
 
 
-Command-line Interface to launch `BatchProcessor`
+Command-line Interface to launch ``BatchProcessor``
 =================================================
 
-We provide the command-line interface to launch `BatchProcessor` easily.
-You can only focus on using `DynamicBatcher` with this command.
+We provide the command-line interface to launch ``BatchProcessor`` easily.
+You can only focus on using ``DynamicBatcher`` and run ``BatchProcessor`` with this command.
 
 
     .. code-block:: bash
@@ -22,7 +22,7 @@ Args
 ----
 
     callable (str):
-        Callable name to execute. ex.: 'module.submodule.func'
+        Callable name to execute. ex.: 'module.submodule.func'.
         The callable should have has only one positional argument that typed 'List'.
     
     -bs/--batch-size (int):
