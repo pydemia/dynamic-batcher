@@ -1,0 +1,26 @@
+version: 2.1
+
+jobs:
+  package-and-redis-tests:
+    docker:
+      - image: cimg/python:3.13
+      - image: redis:7-alpine
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: Build and install the distribution
+          command: |
+            python -m pip install build twine pytest
+            python -m build
+            python -m twine check dist/*
+            python -m pip install dist/*.whl
+            python -m pip check
+      - run:
+          name: Run Redis-backed tests
+          command: python -m pytest -q test
+
+workflows:
+  package:
+    jobs:
+      - package-and-redis-tests

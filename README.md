@@ -9,6 +9,8 @@ dynamic-batcher
 pip install dynamic_batcher
 ```
 
+CircleCI builds the distribution and runs the Redis-backed tests on Python 3.13.
+
 ## Quickstart
 
 ### Additional Requirements
